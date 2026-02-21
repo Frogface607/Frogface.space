@@ -39,22 +39,27 @@ interface LogItem {
 
 const INITIAL_QUESTS: Quest[] = [
   { id: "q1", title: "Первые 10 платящих на MyReply", project: "MyReply", xp: 800, priority: "boss", progress: 10, done: false },
-  { id: "q2", title: "Запуск сайта Edison Bar — 11 дней", project: "Edison", xp: 500, priority: "boss", progress: 30, done: false },
+  { id: "q2", title: "Запуск сайта Edison Bar — 10 дней", project: "Edison", xp: 500, priority: "boss", progress: 30, done: false },
   { id: "q3", title: "Съёмки «Идущий к руке» (ср-чт-пт)", project: "YouTube", xp: 300, priority: "critical", progress: 0, done: false },
   { id: "q4", title: "Промокоды MyReply 7 дней — раздать своим", project: "MyReply", xp: 200, priority: "critical", progress: 0, done: false },
   { id: "q5", title: "Планёрка с Машей (стратегия Edison)", project: "Edison", xp: 150, priority: "critical", progress: 0, done: false },
   { id: "q6", title: "Пост soft launch MyReply от Frogface-бота", project: "MyReply", xp: 150, priority: "critical", progress: 0, done: false },
-  { id: "q7", title: "UGC-конкурс «самый трешовый отзыв»", project: "MyReply", xp: 150, priority: "normal", progress: 0, done: false },
-  { id: "q8", title: "Freepik Pipeline: batch вывесок Edison", project: "Edison", xp: 100, priority: "normal", progress: 0, done: false },
-  { id: "q9", title: "Ритуал закрытия дня в Frogface.space", project: "Frogface", xp: 100, priority: "normal", progress: 0, done: false },
+  { id: "q7", title: "Поднять OpenClaw Gateway на VPS (Jino)", project: "Frogface", xp: 200, priority: "critical", progress: 70, done: false },
+  { id: "q8", title: "UGC-конкурс «самый трешовый отзыв»", project: "MyReply", xp: 150, priority: "normal", progress: 0, done: false },
+  { id: "q9", title: "Freepik Pipeline: batch вывесок Edison", project: "Edison", xp: 100, priority: "normal", progress: 0, done: false },
 ];
 
 const INITIAL_LOG: LogItem[] = [
-  { id: "l1", time: "только что", text: "Глава 1 начинается. Архитектор входит в командный центр.", type: "story" },
-  { id: "l2", time: "2ч назад", text: "Прокси Moltbot развёрнут. Голосовые разблокированы.", type: "achievement" },
-  { id: "l3", time: "вчера", text: "Первый платёж: 490₽. Золото +0.5K.", type: "gold" },
-  { id: "l4", time: "2 дня назад", text: "AI Proxy создан. Геоблокировка обойдена.", type: "achievement" },
-  { id: "l5", time: "3 дня назад", text: "Воркспейс оптимизирован. Расход токенов снижен в 4 раза.", type: "xp" },
+  { id: "d1a", time: "28 янв, вечер", text: "Frogface.space построен с нуля. Дашборд, агенты, командный центр — всё живое.", type: "achievement" },
+  { id: "d1b", time: "28 янв, вечер", text: "OpenClaw подключён к Frogface — RAG + AI через VPS вместо костылей.", type: "achievement" },
+  { id: "d1c", time: "28 янв, день", text: "8 AI-агентов получили персональные промпты с полным контекстом Архитектора.", type: "xp" },
+  { id: "d1d", time: "28 янв, день", text: "PWA установка готова. Frogface.space теперь нативное приложение.", type: "achievement" },
+  { id: "d1e", time: "28 янв, день", text: "Мобильная вёрстка починена на всех страницах.", type: "xp" },
+  { id: "d1f", time: "28 янв, день", text: "OpenRouter интеграция: живые AI-ответы вместо заглушек.", type: "achievement" },
+  { id: "d1g", time: "28 янв, день", text: "API endpoints для Custom GPT Actions: /quests, /log, /status.", type: "xp" },
+  { id: "d1h", time: "28 янв, утро", text: "Глава 1 начинается. Архитектор входит в командный центр.", type: "story" },
+  { id: "d1i", time: "28 янв", text: "VPS на Jino: OpenClaw установлен, systemd настроен, осталось привязать.", type: "log" },
+  { id: "d1j", time: "27 янв", text: "Первый платёж: 490₽. Золото +0.5K.", type: "gold" },
 ];
 
 export default function HQPage() {
