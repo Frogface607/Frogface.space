@@ -9,7 +9,9 @@ import {
   Terminal,
   Home,
   Gamepad2,
+  LogOut,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -22,6 +24,13 @@ const NAV = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  };
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-border bg-bg-card">
@@ -84,6 +93,13 @@ export function Sidebar() {
           <StatBar label="Gold" value={178} max={500} color="bg-gold" suffix="K ₽" />
           <StatBar label="Mana" value={72} max={100} color="bg-mana" />
         </div>
+        <button
+          onClick={handleLogout}
+          className="mt-3 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] text-text-dim transition-colors hover:bg-bg-hover hover:text-hp"
+        >
+          <LogOut className="h-3 w-3" />
+          Выйти
+        </button>
       </div>
     </aside>
   );
