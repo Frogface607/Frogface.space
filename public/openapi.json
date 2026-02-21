@@ -1,0 +1,97 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Frogface Life OS API",
+    "description": "Personal Life OS dashboard API — manage quests, log entries, and system status",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "https://frogface.space" }
+  ],
+  "paths": {
+    "/api/status": {
+      "get": {
+        "operationId": "getStatus",
+        "summary": "Get system status — quests, XP, log count",
+        "responses": {
+          "200": {
+            "description": "System status",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    },
+    "/api/quests": {
+      "get": {
+        "operationId": "getQuests",
+        "summary": "Get all HQ quests with progress",
+        "responses": {
+          "200": {
+            "description": "List of quests",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      },
+      "post": {
+        "operationId": "addQuest",
+        "summary": "Add a new quest to the HQ board",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title"],
+                "properties": {
+                  "title": { "type": "string", "description": "Quest title" },
+                  "project": { "type": "string", "description": "Project name (e.g. MyReply, Edison)" },
+                  "xp": { "type": "integer", "description": "XP reward (default 100)" },
+                  "priority": { "type": "string", "enum": ["normal", "critical", "boss"], "description": "Quest priority" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Quest created" }
+        }
+      }
+    },
+    "/api/log": {
+      "get": {
+        "operationId": "getLog",
+        "summary": "Get activity log entries",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer" }, "description": "Max entries (default 20)" },
+          { "name": "source", "in": "query", "schema": { "type": "string" }, "description": "Filter by source (hq, command, agent:moltbot)" }
+        ],
+        "responses": {
+          "200": { "description": "Log entries" }
+        }
+      },
+      "post": {
+        "operationId": "addLogEntry",
+        "summary": "Add entry to the activity log / chronicle",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["text"],
+                "properties": {
+                  "text": { "type": "string", "description": "Log entry text" },
+                  "source": { "type": "string", "description": "Source (default: command)" },
+                  "type": { "type": "string", "enum": ["log", "story", "achievement", "gold", "xp"], "description": "Entry type" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Entry created" }
+        }
+      }
+    }
+  }
+}

@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { AGENTS, STATUS_CONFIG, STATUS_CYCLE, type AgentData, type AgentTask, type AgentStatus } from "@/lib/agents";
 import { cn } from "@/lib/utils";
-import { useLocalStorage } from "@/lib/use-local-storage";
+import { usePersistedState } from "@/lib/use-persisted-state";
 
 interface ChatMessage {
   id: string;
@@ -50,11 +50,11 @@ export default function AgentPage() {
 }
 
 function AgentDashboard({ agent: initialAgent }: { agent: AgentData }) {
-  const [status, setStatus] = useLocalStorage<AgentStatus>(`ff_agent_${initialAgent.id}_status`, initialAgent.status);
-  const [tasks, setTasks] = useLocalStorage<AgentTask[]>(`ff_agent_${initialAgent.id}_tasks`, initialAgent.tasks);
+  const [status, setStatus] = usePersistedState<AgentStatus>(`ff_agent_${initialAgent.id}_status`, initialAgent.status);
+  const [tasks, setTasks] = usePersistedState<AgentTask[]>(`ff_agent_${initialAgent.id}_tasks`, initialAgent.tasks);
   const [taskInput, setTaskInput] = useState("");
-  const [log, setLog] = useLocalStorage<string[]>(`ff_agent_${initialAgent.id}_log`, initialAgent.log);
-  const [messages, setMessages] = useLocalStorage<ChatMessage[]>(`ff_agent_${initialAgent.id}_chat`, [
+  const [log, setLog] = usePersistedState<string[]>(`ff_agent_${initialAgent.id}_log`, initialAgent.log);
+  const [messages, setMessages] = usePersistedState<ChatMessage[]>(`ff_agent_${initialAgent.id}_chat`, [
     { id: "greeting", role: "agent", text: initialAgent.greeting, time: now() },
   ]);
   const [chatInput, setChatInput] = useState("");

@@ -13,7 +13,7 @@ import {
   Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useLocalStorage } from "@/lib/use-local-storage";
+import { usePersistedState } from "@/lib/use-persisted-state";
 
 interface Quest {
   id: string;
@@ -51,8 +51,8 @@ const INITIAL_LOG: LogItem[] = [
 ];
 
 export default function HQPage() {
-  const [quests, setQuests] = useLocalStorage("ff_hq_quests", INITIAL_QUESTS);
-  const [log, setLog] = useLocalStorage("ff_hq_log", INITIAL_LOG);
+  const [quests, setQuests] = usePersistedState("ff_hq_quests", INITIAL_QUESTS);
+  const [log, setLog] = usePersistedState("ff_hq_log", INITIAL_LOG);
   const [logInput, setLogInput] = useState("");
 
   const toggleQuest = (id: string) => {

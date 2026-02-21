@@ -1,7 +1,6 @@
-Better error visibility for AI chat + redeploy trigger
+Fix OpenRouter model IDs — use correct format without date suffix
 
-- Add GET /api/chat health check (shows if API key is configured)
-- Show actual error messages in chat instead of silent fallback
-- Better error handling: parse OpenRouter error responses
-- Wrap fetch in try-catch for network failures
-- Trigger Vercel redeploy to pick up OPENROUTER_API_KEY env var
+- claude-sonnet-4-20250514 → anthropic/claude-sonnet-4
+- claude-opus-4-20250514 → anthropic/claude-sonnet-4 (cost-effective)
+- claude-3.5-haiku-20241022 → anthropic/claude-haiku-4.5
+- Show full error details (error + details + model) in chat
