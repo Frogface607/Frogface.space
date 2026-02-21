@@ -74,7 +74,10 @@ export default function CommandPage() {
         }),
       });
 
-      if (!res.ok) throw new Error(`API error ${res.status}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(err.error || err.details || `API error ${res.status}`);
+      }
 
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
@@ -92,11 +95,11 @@ export default function CommandPage() {
           prev.map((m) => (m.id === botMsgId ? { ...m, content: snapshot } : m))
         );
       }
-    } catch {
-      const fallback = getSimulatedResponse(input);
+    } catch (err) {
+      const errorText = err instanceof Error ? err.message : "Неизвестная ошибка";
       setMessages((prev) => [
         ...prev,
-        { id: botMsgId, role: "assistant", content: `⚡ ${fallback}`, timestamp: new Date() },
+        { id: botMsgId, role: "assistant", content: `⚠️ API недоступен: ${errorText}\n\n(Фоллбек) ${getSimulatedResponse(input)}`, timestamp: new Date() },
       ]);
       setIsTyping(false);
     }

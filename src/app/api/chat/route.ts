@@ -14,40 +14,66 @@ interface ChatMsg {
   content: string;
 }
 
+export async function GET() {
+  const hasKey = !!process.env.OPENROUTER_API_KEY;
+  const keyPrefix = hasKey ? process.env.OPENROUTER_API_KEY!.slice(0, 12) + "..." : "NOT SET";
+  return Response.json({ status: "ok", hasKey, keyPrefix });
+}
+
 export async function POST(req: NextRequest) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    return Response.json({ error: "OPENROUTER_API_KEY not configured" }, { status: 500 });
+    return Response.json(
+      { error: "OPENROUTER_API_KEY not configured. Add it in Vercel Environment Variables and redeploy." },
+      { status: 500 },
+    );
   }
 
-  const body = await req.json();
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
   const { messages, model: modelLabel } = body as { messages: ChatMsg[]; model?: string };
 
   if (!messages?.length) {
-    return Response.json({ error: "No messages" }, { status: 400 });
+    return Response.json({ error: "No messages provided" }, { status: 400 });
   }
 
   const model = (modelLabel && MODEL_MAP[modelLabel]) || DEFAULT_MODEL;
 
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "https://frogface.space",
-      "X-Title": "Frogface Studio",
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      stream: true,
-      max_tokens: 1024,
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://frogface.space",
+        "X-Title": "Frogface Studio",
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        stream: true,
+        max_tokens: 1024,
+      }),
+    });
+  } catch (err) {
+    return Response.json(
+      { error: "Failed to reach OpenRouter", details: String(err) },
+      { status: 502 },
+    );
+  }
 
   if (!response.ok) {
     const text = await response.text();
-    return Response.json({ error: `OpenRouter error: ${response.status}`, details: text }, { status: 502 });
+    return Response.json(
+      { error: `OpenRouter ${response.status}`, details: text, model },
+      { status: 502 },
+    );
   }
 
   const encoder = new TextEncoder();
@@ -79,7 +105,7 @@ export async function POST(req: NextRequest) {
                 controller.enqueue(encoder.encode(delta));
               }
             } catch {
-              // skip malformed chunks
+              // skip malformed SSE chunks
             }
           }
         }

@@ -1,11 +1,13 @@
-feat: localStorage persistence + mobile responsive sidebar
+Mobile responsive + real AI chat via OpenRouter
 
-- useLocalStorage hook for data persistence across page reloads
-  - HQ quests and log entries saved
-  - Quest chains completion saved
-  - Agent status, tasks, chat messages, activity log saved
-- Mobile responsive sidebar:
-  - Burger menu on mobile, slide-in overlay
-  - Fixed sidebar on desktop (lg+)
-  - Auto-close on navigation
-  - Mobile top bar with logo
+- Fix all pages for mobile: responsive grids, compact padding, flex-wrap
+- HQ: 2-col stats on mobile, stacked quests/log sections
+- Player: vertical layout on small screens, compact avatar + credo
+- Projects: single column on mobile, wrapped metrics
+- Studio: single column agent cards, stacked chat/sidebar on mobile
+- Quests: tighter padding on chain headers
+- Command: adjusted viewport height for mobile top bar
+- Add /api/chat streaming proxy to OpenRouter API
+- Agent chat pages now use real AI with streaming responses
+- Command center (Moltbot) uses real AI with streaming
+- Fallback to simulated responses when API is unavailable

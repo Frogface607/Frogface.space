@@ -123,7 +123,10 @@ function AgentDashboard({ agent: initialAgent }: { agent: AgentData }) {
         }),
       });
 
-      if (!res.ok) throw new Error(`API error ${res.status}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(err.error || err.details || `API error ${res.status}`);
+      }
 
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
@@ -143,12 +146,13 @@ function AgentDashboard({ agent: initialAgent }: { agent: AgentData }) {
 
       addLog(`Ответил на: "${text.slice(0, 30)}..."`);
     } catch (err) {
+      const errorText = err instanceof Error ? err.message : "Неизвестная ошибка";
       const fallback = simulateResponse(initialAgent, text);
       setMessages((prev) => {
         const without = prev.filter((m) => m.id !== agentMsgId);
-        return [...without, { id: agentMsgId, role: "agent" as const, text: `⚡ ${fallback}`, time: now() }];
+        return [...without, { id: agentMsgId, role: "agent" as const, text: `⚠️ API: ${errorText}\n\n(Фоллбек) ${fallback}`, time: now() }];
       });
-      addLog(`Оффлайн-ответ (API недоступен)`);
+      addLog(`Оффлайн-ответ: ${errorText}`);
     } finally {
       setTyping(false);
     }
