@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Swords,
   Building2,
@@ -11,8 +12,9 @@ import {
   Gamepad2,
   ScrollText,
   LogOut,
+  Menu,
+  X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -27,6 +29,11 @@ const NAV = [
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -34,27 +41,31 @@ export function Sidebar() {
     router.refresh();
   };
 
-  return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-border bg-bg-card">
+  const sidebarContent = (
+    <>
       {/* Logo */}
-      <div className="flex items-center gap-3 border-b border-border px-5 py-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/20">
-          <Swords className="h-5 w-5 text-accent" />
+      <div className="flex items-center justify-between border-b border-border px-5 py-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/20">
+            <Swords className="h-5 w-5 text-accent" />
+          </div>
+          <div>
+            <h1 className="text-sm font-bold tracking-wide text-text-bright">FROGFACE</h1>
+            <p className="text-[10px] font-medium uppercase tracking-widest text-text-dim">Life OS</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-sm font-bold tracking-wide text-text-bright">
-            FROGFACE
-          </h1>
-          <p className="text-[10px] font-medium uppercase tracking-widest text-text-dim">
-            Life OS
-          </p>
-        </div>
+        <button
+          onClick={() => setOpen(false)}
+          className="rounded-lg p-1.5 text-text-dim hover:text-text lg:hidden"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3 py-4">
         {NAV.map((item) => {
-          const active = pathname === item.href;
+          const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}
@@ -69,10 +80,7 @@ export function Sidebar() {
               <item.icon className={cn("h-4 w-4", active && "text-accent")} />
               <div>
                 <span>{item.label}</span>
-                <p className={cn(
-                  "text-[10px]",
-                  active ? "text-accent/60" : "text-text-dim/50"
-                )}>
+                <p className={cn("text-[10px]", active ? "text-accent/60" : "text-text-dim/50")}>
                   {item.description}
                 </p>
               </div>
@@ -103,7 +111,39 @@ export function Sidebar() {
           Выйти
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile top bar */}
+      <div className="fixed left-0 right-0 top-0 z-50 flex items-center gap-3 border-b border-border bg-bg-card px-4 py-3 lg:hidden">
+        <button onClick={() => setOpen(true)} className="rounded-lg p-1.5 text-text-dim hover:text-accent">
+          <Menu className="h-5 w-5" />
+        </button>
+        <Swords className="h-4 w-4 text-accent" />
+        <span className="text-xs font-bold text-text-bright">FROGFACE</span>
+      </div>
+
+      {/* Mobile overlay */}
+      {open && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 lg:hidden"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — mobile: slide-in overlay, desktop: fixed */}
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-border bg-bg-card transition-transform duration-200",
+          "lg:translate-x-0",
+          open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
+      >
+        {sidebarContent}
+      </aside>
+    </>
   );
 }
 

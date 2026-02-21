@@ -1,4 +1,10 @@
-fix: remove duplicate root page.tsx that was hiding sidebar
+feat: Studio v2 — individual agent pages with chat, tasks, activity log
 
-src/app/page.tsx was shadowing src/app/(dashboard)/page.tsx,
-causing the page to render outside the dashboard layout (no Sidebar).
+- /studio: clickable card grid with hover effects and status indicators
+- /studio/[id]: full agent dashboard with:
+  - Profile header with status toggle
+  - Chat interface with simulated per-agent responses
+  - Task list with add/complete functionality
+  - Activity log
+  - System prompt and model info
+- Shared agent data extracted to src/lib/agents.ts

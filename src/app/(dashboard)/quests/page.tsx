@@ -6,7 +6,6 @@ import {
   ChevronRight,
   CheckCircle2,
   Circle,
-  AlertCircle,
   Crown,
   Flame,
   Music,
@@ -19,6 +18,7 @@ import {
   ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocalStorage } from "@/lib/use-local-storage";
 
 type Priority = "normal" | "critical" | "boss";
 
@@ -145,7 +145,7 @@ const INITIAL_CHAINS: QuestChain[] = [
 ];
 
 export default function QuestsPage() {
-  const [chains, setChains] = useState(INITIAL_CHAINS);
+  const [chains, setChains] = useLocalStorage("ff_quest_chains", INITIAL_CHAINS);
   const [expandedChains, setExpandedChains] = useState<Set<string>>(new Set(["edison", "myreply"]));
 
   const toggleChain = (chainId: string) => {
