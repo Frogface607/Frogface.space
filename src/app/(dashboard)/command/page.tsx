@@ -1,8 +1,22 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Mic, Sparkles, Trash2 } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  Send,
+  Bot,
+  User,
+  Mic,
+  MicOff,
+  Sparkles,
+  Trash2,
+  Volume2,
+  VolumeX,
+  Loader2,
+  Radio,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useChatHistory, type ChatMsg } from "@/lib/use-chat-history";
+import { speak, stopSpeaking, isSpeaking, preloadVoices } from "@/lib/tts";
 
 function now() {
   return new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
@@ -34,74 +48,167 @@ const SYSTEM_PROMPT = [
   "Anti-patterns: НЕ cold outreach до social proof, НЕ Playwright, НЕ автоматизация ради автоматизации.",
   "Глава 1: Фундамент, 30-дневный спринт.",
   "Стиль: дружелюбный, лаконичный, с RPG-нарративом. Обращайся «Архитектор». Русский язык.",
+  "",
+  "ВАЖНО: Если разговор идёт голосом — отвечай коротко и разговорно. Не пиши списки и буллеты — говори как друг.",
 ].join("\n");
 
 export default function CommandPage() {
   const [messages, setMessages, clearChat] = useChatHistory("command", INITIAL_MESSAGES);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [voiceMode, setVoiceMode] = useVoiceMode();
+  const [autoSpeak, setAutoSpeak] = useState(true);
+  const [recording, setRecording] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const pendingSpeakRef = useRef<string | null>(null);
+
+  const hasSpeechApi =
+    typeof window !== "undefined" &&
+    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+
+  useEffect(() => {
+    preloadVoices();
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || isTyping) return;
+  const speakText = useCallback(
+    (text: string) => {
+      if (!autoSpeak || !voiceMode) return;
+      setSpeaking(true);
+      speak(text, () => setSpeaking(false));
+    },
+    [autoSpeak, voiceMode],
+  );
 
-    const userMsg: ChatMsg = { id: Date.now().toString(), role: "user", text: input, time: now() };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
-    setIsTyping(true);
+  const sendMessage = useCallback(
+    async (text?: string) => {
+      const msg = text || input.trim();
+      if (!msg || isTyping) return;
 
-    const botMsgId = (Date.now() + 1).toString();
+      const userMsg: ChatMsg = { id: Date.now().toString(), role: "user", text: msg, time: now() };
+      setMessages((prev) => [...prev, userMsg]);
+      setInput("");
+      setIsTyping(true);
 
-    try {
-      const history = messages
-        .filter((m) => m.role !== "system")
-        .map((m) => ({
-          role: m.role === "user" ? ("user" as const) : ("assistant" as const),
-          content: m.text,
-        }));
-      history.push({ role: "user", content: input });
+      const botMsgId = (Date.now() + 1).toString();
 
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...history],
-          model: "Claude Sonnet 4",
-        }),
-      });
+      try {
+        const history = messages
+          .filter((m) => m.role !== "system")
+          .map((m) => ({
+            role: m.role === "user" ? ("user" as const) : ("assistant" as const),
+            content: m.text,
+          }));
+        history.push({ role: "user", content: msg });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-        throw new Error([err.error, err.details, err.model].filter(Boolean).join(" | "));
+        const isVoice = voiceMode;
+        const systemContent = isVoice
+          ? SYSTEM_PROMPT + "\n\n[Режим: голосовой диалог. Отвечай коротко, 2-4 предложения. Без маркдаун-форматирования.]"
+          : SYSTEM_PROMPT;
+
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [{ role: "system", content: systemContent }, ...history],
+            model: "Claude Sonnet 4",
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+          throw new Error([err.error, err.details, err.model].filter(Boolean).join(" | "));
+        }
+
+        const reader = res.body!.getReader();
+        const decoder = new TextDecoder();
+        let full = "";
+
+        setMessages((prev) => [...prev, { id: botMsgId, role: "assistant", text: "", time: now() }]);
+        setIsTyping(false);
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          full += decoder.decode(value, { stream: true });
+          const snapshot = full;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === botMsgId ? { ...m, text: snapshot } : m)),
+          );
+        }
+
+        if (full) speakText(full);
+      } catch (err) {
+        const errorText = err instanceof Error ? err.message : "Неизвестная ошибка";
+        const fallback = `⚠️ API: ${errorText}\n\n(Фоллбек) ${getSimulatedResponse(msg)}`;
+        setMessages((prev) => [
+          ...prev,
+          { id: botMsgId, role: "assistant", text: fallback, time: now() },
+        ]);
+        setIsTyping(false);
       }
+    },
+    [input, isTyping, messages, setMessages, voiceMode, speakText],
+  );
 
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let full = "";
+  const toggleRecording = useCallback(() => {
+    if (recording) {
+      recognitionRef.current?.stop();
+      setRecording(false);
+      return;
+    }
+    if (!hasSpeechApi) return;
 
-      setMessages((prev) => [...prev, { id: botMsgId, role: "assistant", text: "", time: now() }]);
-      setIsTyping(false);
+    stopSpeaking();
+    setSpeaking(false);
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        full += decoder.decode(value, { stream: true });
-        const snapshot = full;
-        setMessages((prev) =>
-          prev.map((m) => (m.id === botMsgId ? { ...m, text: snapshot } : m))
-        );
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SR();
+    recognition.lang = "ru-RU";
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    let fullText = "";
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let current = "";
+      for (let i = 0; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) fullText += t + " ";
+        else current = t;
       }
-    } catch (err) {
-      const errorText = err instanceof Error ? err.message : "Неизвестная ошибка";
-      setMessages((prev) => [
-        ...prev,
-        { id: botMsgId, role: "assistant", text: `⚠️ API: ${errorText}\n\n(Фоллбек) ${getSimulatedResponse(input)}`, time: now() },
-      ]);
-      setIsTyping(false);
+      setInput(fullText + current);
+    };
+
+    recognition.onend = () => {
+      setRecording(false);
+      if (fullText.trim()) {
+        setInput("");
+        sendMessage(fullText.trim());
+      }
+    };
+
+    recognition.onerror = () => setRecording(false);
+    recognition.start();
+    recognitionRef.current = recognition;
+    setRecording(true);
+  }, [recording, hasSpeechApi, sendMessage]);
+
+  const toggleVoiceMode = () => {
+    const next = !voiceMode;
+    setVoiceMode(next);
+    if (!next) {
+      stopSpeaking();
+      setSpeaking(false);
+      if (recording) {
+        recognitionRef.current?.stop();
+        setRecording(false);
+      }
     }
   };
 
@@ -110,20 +217,54 @@ export default function CommandPage() {
       {/* Header */}
       <div className="flex items-center justify-between rounded-t-xl border border-border bg-bg-card px-4 py-3 lg:px-5">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/20">
-            <Bot className="h-5 w-5 text-accent" />
+          <div className={cn(
+            "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
+            voiceMode ? "bg-xp/20" : "bg-accent/20",
+          )}>
+            {voiceMode ? (
+              <Radio className="h-5 w-5 text-xp" />
+            ) : (
+              <Bot className="h-5 w-5 text-accent" />
+            )}
           </div>
           <div>
-            <h1 className="text-sm font-semibold text-text-bright">Moltbot — Командный центр</h1>
-            <p className="text-[10px] text-xp">● Online · Claude Sonnet 4 · OpenRouter</p>
+            <h1 className="text-sm font-semibold text-text-bright">
+              {voiceMode ? "Moltbot — Голосовой режим" : "Moltbot — Командный центр"}
+            </h1>
+            <p className="text-[10px] text-xp">
+              ● Online · Claude Sonnet 4 {voiceMode ? " · TTS" : ""}
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          {voiceMode && (
+            <button
+              onClick={() => setAutoSpeak((v) => !v)}
+              className={cn(
+                "rounded p-1.5 transition-colors",
+                autoSpeak ? "text-xp hover:bg-xp/10" : "text-text-dim/40 hover:bg-bg-hover",
+              )}
+              title={autoSpeak ? "Автоозвучка: вкл" : "Автоозвучка: выкл"}
+            >
+              {autoSpeak ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </button>
+          )}
+          <button
+            onClick={toggleVoiceMode}
+            className={cn(
+              "rounded-lg px-2.5 py-1.5 text-[10px] font-medium transition-all",
+              voiceMode
+                ? "bg-xp/20 text-xp"
+                : "bg-bg-deep text-text-dim hover:border-accent/50 hover:text-accent",
+            )}
+          >
+            {voiceMode ? "Голос ВКЛ" : "Голос"}
+          </button>
           <span className="hidden rounded-md bg-bg-deep px-2 py-1 text-[10px] text-text-dim sm:inline-block">
             Глава 1
           </span>
           <button
-            onClick={clearChat}
+            onClick={() => { clearChat(); stopSpeaking(); }}
             className="rounded p-1.5 text-text-dim/40 transition-colors hover:bg-hp/10 hover:text-hp"
             title="Очистить чат"
           >
@@ -138,7 +279,11 @@ export default function CommandPage() {
         className="flex-1 space-y-4 overflow-y-auto border-x border-border bg-bg-deep/50 p-4 lg:p-5"
       >
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
+          <MessageBubble
+            key={msg.id}
+            message={msg}
+            onSpeak={voiceMode ? (text) => { stopSpeaking(); speakText(text); } : undefined}
+          />
         ))}
         {isTyping && (
           <div className="flex items-center gap-2 text-sm text-text-dim">
@@ -148,48 +293,127 @@ export default function CommandPage() {
         )}
       </div>
 
-      {/* Input */}
-      <div className="rounded-b-xl border border-border bg-bg-card p-3">
-        <div className="flex items-center gap-2">
-          <button
-            className="hidden rounded-lg p-2 text-text-dim transition-colors hover:bg-bg-hover hover:text-accent sm:block"
-            title="Голосовой ввод (скоро)"
-          >
-            <Mic className="h-5 w-5" />
-          </button>
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            placeholder="Написать Moltbot..."
-            className="flex-1 rounded-lg border border-border bg-bg-deep px-4 py-2.5 text-sm text-text placeholder:text-text-dim/40 focus:border-accent/50 focus:outline-none"
-          />
-          <button
-            onClick={sendMessage}
-            disabled={!input.trim()}
-            className="rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-accent-dim disabled:opacity-30"
-          >
-            <Send className="h-4 w-4" />
-          </button>
+      {/* Voice Mode — Big Mic */}
+      {voiceMode ? (
+        <div className="border-t border-border bg-bg-card p-4">
+          <div className="flex flex-col items-center gap-3">
+            {speaking && (
+              <div className="flex items-center gap-2 text-xs text-xp">
+                <Volume2 className="h-3.5 w-3.5 animate-pulse" />
+                Moltbot говорит...
+                <button
+                  onClick={() => { stopSpeaking(); setSpeaking(false); }}
+                  className="ml-1 rounded px-2 py-0.5 text-[10px] text-text-dim hover:bg-bg-hover"
+                >
+                  стоп
+                </button>
+              </div>
+            )}
+            {recording && input && (
+              <div className="w-full max-w-md rounded-lg border border-border/30 bg-bg-deep/50 px-4 py-2 text-center">
+                <p className="text-xs text-text-dim">{input}</p>
+              </div>
+            )}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={toggleRecording}
+                disabled={isTyping}
+                className={cn(
+                  "flex h-16 w-16 items-center justify-center rounded-full transition-all",
+                  recording
+                    ? "bg-hp/20 text-hp shadow-lg shadow-hp/20 animate-pulse"
+                    : "bg-accent/20 text-accent hover:bg-accent/30 hover:scale-105",
+                  isTyping && "opacity-30",
+                )}
+              >
+                {recording ? (
+                  <MicOff className="h-7 w-7" />
+                ) : (
+                  <Mic className="h-7 w-7" />
+                )}
+              </button>
+            </div>
+            <p className="text-[10px] text-text-dim">
+              {recording ? "Говори... Нажми чтобы остановить" : "Нажми и говори"}
+            </p>
+
+            <div className="flex w-full items-center gap-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                placeholder="или напиши..."
+                className="flex-1 rounded-lg border border-border bg-bg-deep px-3 py-2 text-xs text-text placeholder:text-text-dim/30 focus:border-accent/50 focus:outline-none"
+              />
+              <button
+                onClick={() => sendMessage()}
+                disabled={!input.trim() || isTyping}
+                className="rounded-lg bg-accent/20 p-2 text-accent transition-colors hover:bg-accent/30 disabled:opacity-30"
+              >
+                <Send className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="mt-2 flex flex-wrap gap-1.5 lg:gap-2">
-          {["/status", "/quests", "/report"].map((cmd) => (
+      ) : (
+        /* Text Mode Input */
+        <div className="rounded-b-xl border border-border bg-bg-card p-3">
+          <div className="flex items-center gap-2">
+            {hasSpeechApi && (
+              <button
+                onClick={toggleRecording}
+                className={cn(
+                  "rounded-lg p-2 transition-colors",
+                  recording
+                    ? "bg-hp/20 text-hp animate-pulse"
+                    : "text-text-dim hover:bg-bg-hover hover:text-accent",
+                )}
+                title="Голосовой ввод"
+              >
+                {recording ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+              </button>
+            )}
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder="Написать Moltbot..."
+              className="flex-1 rounded-lg border border-border bg-bg-deep px-4 py-2.5 text-sm text-text placeholder:text-text-dim/40 focus:border-accent/50 focus:outline-none"
+            />
             <button
-              key={cmd}
-              onClick={() => setInput(cmd)}
-              className="rounded-md border border-border px-2 py-1 text-[10px] text-text-dim transition-colors hover:border-accent/50 hover:text-accent"
+              onClick={() => sendMessage()}
+              disabled={!input.trim()}
+              className="rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-accent-dim disabled:opacity-30"
             >
-              {cmd}
+              <Send className="h-4 w-4" />
             </button>
-          ))}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5 lg:gap-2">
+            {["/status", "/quests", "/report"].map((cmd) => (
+              <button
+                key={cmd}
+                onClick={() => setInput(cmd)}
+                className="rounded-md border border-border px-2 py-1 text-[10px] text-text-dim transition-colors hover:border-accent/50 hover:text-accent"
+              >
+                {cmd}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-function MessageBubble({ message }: { message: ChatMsg }) {
+function MessageBubble({
+  message,
+  onSpeak,
+}: {
+  message: ChatMsg;
+  onSpeak?: (text: string) => void;
+}) {
   if (message.role === "system") {
     return (
       <div className="flex justify-center">
@@ -216,17 +440,46 @@ function MessageBubble({ message }: { message: ChatMsg }) {
         )}
       </div>
       <div
-        className={`max-w-[80%] rounded-xl px-4 py-3 lg:max-w-[70%] ${
-          isUser
-            ? "bg-mana/10 text-text"
-            : "border border-border/50 bg-bg-card text-text"
+        className={`group max-w-[80%] rounded-xl px-4 py-3 lg:max-w-[70%] ${
+          isUser ? "bg-mana/10 text-text" : "border border-border/50 bg-bg-card text-text"
         }`}
       >
         <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.text}</p>
-        {message.time && <p className="mt-1 text-[10px] text-text-dim">{message.time}</p>}
+        <div className="mt-1 flex items-center gap-2">
+          {message.time && <p className="text-[10px] text-text-dim">{message.time}</p>}
+          {onSpeak && !isUser && message.text && (
+            <button
+              onClick={() => onSpeak(message.text)}
+              className="invisible text-text-dim/30 transition-colors hover:text-accent group-hover:visible"
+              title="Озвучить"
+            >
+              <Volume2 className="h-3 w-3" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
+}
+
+function useVoiceMode(): [boolean, (v: boolean) => void] {
+  const [mode, setMode] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("ff_voice_mode");
+      if (stored === "true") setMode(true);
+    } catch {}
+  }, []);
+
+  const set = (v: boolean) => {
+    setMode(v);
+    try {
+      localStorage.setItem("ff_voice_mode", String(v));
+    } catch {}
+  };
+
+  return [mode, set];
 }
 
 function getSimulatedResponse(input: string): string {
