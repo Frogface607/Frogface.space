@@ -1,10 +1,11 @@
-feat: Studio v2 — individual agent pages with chat, tasks, activity log
+feat: localStorage persistence + mobile responsive sidebar
 
-- /studio: clickable card grid with hover effects and status indicators
-- /studio/[id]: full agent dashboard with:
-  - Profile header with status toggle
-  - Chat interface with simulated per-agent responses
-  - Task list with add/complete functionality
-  - Activity log
-  - System prompt and model info
-- Shared agent data extracted to src/lib/agents.ts
+- useLocalStorage hook for data persistence across page reloads
+  - HQ quests and log entries saved
+  - Quest chains completion saved
+  - Agent status, tasks, chat messages, activity log saved
+- Mobile responsive sidebar:
+  - Burger menu on mobile, slide-in overlay
+  - Fixed sidebar on desktop (lg+)
+  - Auto-close on navigation
+  - Mobile top bar with logo
