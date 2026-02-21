@@ -14,72 +14,87 @@ interface ChatMsg {
   content: string;
 }
 
+function getOpenClawUrl(): string | null {
+  return process.env.OPENCLAW_URL || null;
+}
+
+function getOpenClawToken(): string | null {
+  return process.env.OPENCLAW_GATEWAY_TOKEN || null;
+}
+
 export async function GET() {
   const hasKey = !!process.env.OPENROUTER_API_KEY;
   const keyPrefix = hasKey ? process.env.OPENROUTER_API_KEY!.slice(0, 12) + "..." : "NOT SET";
-  return Response.json({ status: "ok", hasKey, keyPrefix });
+  const openclawUrl = getOpenClawUrl();
+  const hasOpenClaw = !!openclawUrl && !!getOpenClawToken();
+  return Response.json({
+    status: "ok",
+    hasKey,
+    keyPrefix,
+    openclaw: hasOpenClaw,
+    openclawUrl: hasOpenClaw ? openclawUrl : null,
+    mode: hasOpenClaw ? "openclaw" : "openrouter-direct",
+  });
 }
 
-export async function POST(req: NextRequest) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
+async function streamFromOpenClaw(
+  messages: ChatMsg[],
+  model: string,
+  openclawUrl: string,
+  token: string,
+): Promise<Response> {
+  const res = await fetch(`${openclawUrl}/v1/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ model, messages, stream: true, max_tokens: 1024 }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
     return Response.json(
-      { error: "OPENROUTER_API_KEY not configured. Add it in Vercel Environment Variables and redeploy." },
-      { status: 500 },
-    );
-  }
-
-  let body;
-  try {
-    body = await req.json();
-  } catch {
-    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
-
-  const { messages, model: modelLabel } = body as { messages: ChatMsg[]; model?: string };
-
-  if (!messages?.length) {
-    return Response.json({ error: "No messages provided" }, { status: 400 });
-  }
-
-  const model = (modelLabel && MODEL_MAP[modelLabel]) || DEFAULT_MODEL;
-
-  let response: Response;
-  try {
-    response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://frogface.space",
-        "X-Title": "Frogface Studio",
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        stream: true,
-        max_tokens: 1024,
-      }),
-    });
-  } catch (err) {
-    return Response.json(
-      { error: "Failed to reach OpenRouter", details: String(err) },
+      { error: `OpenClaw ${res.status}`, details: text, model },
       { status: 502 },
     );
   }
 
-  if (!response.ok) {
-    const text = await response.text();
+  return buildStreamResponse(res);
+}
+
+async function streamFromOpenRouter(
+  messages: ChatMsg[],
+  model: string,
+  apiKey: string,
+): Promise<Response> {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://frogface.space",
+      "X-Title": "Frogface Studio",
+    },
+    body: JSON.stringify({ model, messages, stream: true, max_tokens: 1024 }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
     return Response.json(
-      { error: `OpenRouter ${response.status}`, details: text, model },
+      { error: `OpenRouter ${res.status}`, details: text, model },
       { status: 502 },
     );
   }
 
+  return buildStreamResponse(res);
+}
+
+function buildStreamResponse(upstream: Response): Response {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
-      const reader = response.body!.getReader();
+      const reader = upstream.body!.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
 
@@ -121,4 +136,51 @@ export async function POST(req: NextRequest) {
       "Cache-Control": "no-cache",
     },
   });
+}
+
+export async function POST(req: NextRequest) {
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const { messages, model: modelLabel } = body as { messages: ChatMsg[]; model?: string };
+
+  if (!messages?.length) {
+    return Response.json({ error: "No messages provided" }, { status: 400 });
+  }
+
+  const model = (modelLabel && MODEL_MAP[modelLabel]) || DEFAULT_MODEL;
+
+  const openclawUrl = getOpenClawUrl();
+  const openclawToken = getOpenClawToken();
+
+  // Priority 1: OpenClaw on VPS (has built-in RAG)
+  if (openclawUrl && openclawToken) {
+    try {
+      return await streamFromOpenClaw(messages, model, openclawUrl, openclawToken);
+    } catch (err) {
+      console.warn("OpenClaw unreachable, falling back to OpenRouter:", err);
+    }
+  }
+
+  // Priority 2: Direct OpenRouter
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    return Response.json(
+      { error: "No AI backend configured. Set OPENCLAW_URL + OPENCLAW_GATEWAY_TOKEN or OPENROUTER_API_KEY." },
+      { status: 500 },
+    );
+  }
+
+  try {
+    return await streamFromOpenRouter(messages, model, apiKey);
+  } catch (err) {
+    return Response.json(
+      { error: "Failed to reach OpenRouter", details: String(err) },
+      { status: 502 },
+    );
+  }
 }

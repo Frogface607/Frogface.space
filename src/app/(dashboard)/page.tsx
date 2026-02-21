@@ -302,20 +302,23 @@ function LogEntry({ entry }: { entry: LogItem }) {
 
 function SystemStatus() {
   const [status, setStatus] = useState<{
-    openrouter: boolean;
-    supabase: boolean;
+    ai: boolean;
+    openclaw: boolean;
+    mode: string;
     pwa: boolean;
-  }>({ openrouter: false, supabase: false, pwa: false });
+  }>({ ai: false, openclaw: false, mode: "...", pwa: false });
 
   useEffect(() => {
     fetch("/api/chat")
       .then((r) => r.json())
-      .then((d) => setStatus((s) => ({ ...s, openrouter: d.hasKey })))
-      .catch(() => {});
-
-    fetch("/api/status")
-      .then((r) => r.json())
-      .then((d) => setStatus((s) => ({ ...s, supabase: d.supabase })))
+      .then((d) =>
+        setStatus((s) => ({
+          ...s,
+          ai: d.hasKey || d.openclaw,
+          openclaw: !!d.openclaw,
+          mode: d.mode === "openclaw" ? "OpenClaw VPS" : d.hasKey ? "OpenRouter" : "offline",
+        })),
+      )
       .catch(() => {});
 
     if ("serviceWorker" in navigator) {
@@ -326,8 +329,8 @@ function SystemStatus() {
   }, []);
 
   const items = [
-    { label: "OpenRouter AI", ok: status.openrouter, icon: Bot },
-    { label: "Supabase", ok: status.supabase, icon: Database },
+    { label: status.mode, ok: status.ai, icon: Bot },
+    { label: "OpenClaw RAG", ok: status.openclaw, icon: Database },
     { label: "PWA", ok: status.pwa, icon: Smartphone },
   ];
 
