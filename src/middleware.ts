@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(request: NextRequest) {
+  const authEnabled = !!process.env.ADMIN_PASSWORD && !!process.env.SESSION_SECRET;
+
+  if (!authEnabled) {
+    return NextResponse.next();
+  }
+
   const { pathname } = request.nextUrl;
 
   if (pathname === "/login" || pathname.startsWith("/api/auth")) {

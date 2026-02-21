@@ -1,7 +1,8 @@
-feat: add password auth + interactive Studio with agent controls
+feat: add Quests page with 6 real quest chains + update HQ with real tasks
 
-- Login page with password gate (middleware + cookie session)
-- Logout button in sidebar
-- Route group (dashboard) for auth-protected pages
-- Studio rebuilt: toggle agent status, assign tasks, activity logs
-- Env vars: ADMIN_PASSWORD, SESSION_SECRET (set in Vercel)
+- /quests page: 47 quests in 6 chains from user's plans
+  - Edison Bar autonomy, MyReply first money, Video series,
+    Funnel, Frogface Studio, Content factory
+- Each chain: collapsible, progress ring, priority badges, XP, notes
+- HQ updated with real hot quests from screenshot
+- Quests added to sidebar navigation
