@@ -1,6 +1,22 @@
-Fix OpenRouter model IDs — use correct format without date suffix
+PWA + Supabase persistence + API for Custom GPT
 
-- claude-sonnet-4-20250514 → anthropic/claude-sonnet-4
-- claude-opus-4-20250514 → anthropic/claude-sonnet-4 (cost-effective)
-- claude-3.5-haiku-20241022 → anthropic/claude-haiku-4.5
-- Show full error details (error + details + model) in chat
+PWA:
+- manifest.json with app metadata and theme colors
+- SVG icon (frog + sword) + generated PNG icons (192, 512, apple-touch)
+- Service worker with cache-first for static, network-first for pages
+- Meta tags: apple-web-app-capable, theme-color, viewport lock
+- Service worker registration in root layout
+
+Supabase:
+- Schema: kv_store, activity_log, chat_messages tables
+- usePersistedState hook: localStorage instant hydration + Supabase sync
+- Debounced writes (300ms) to avoid hammering the DB
+- Graceful fallback: works without Supabase (localStorage only)
+- Migrated all pages from useLocalStorage to usePersistedState
+
+API endpoints for Custom GPT Actions:
+- GET/POST /api/quests — read/add quests
+- GET/POST /api/log — read/add activity log entries
+- GET /api/status — system overview (quests, XP, log count)
+- OpenAPI spec at /openapi.json for ChatGPT Actions
+- Bearer token auth via API_SECRET env var

@@ -14,17 +14,12 @@ import {
   Sparkles,
   User,
   Activity,
+  Trash2,
 } from "lucide-react";
 import { AGENTS, STATUS_CONFIG, STATUS_CYCLE, type AgentData, type AgentTask, type AgentStatus } from "@/lib/agents";
 import { cn } from "@/lib/utils";
 import { usePersistedState } from "@/lib/use-persisted-state";
-
-interface ChatMessage {
-  id: string;
-  role: "user" | "agent";
-  text: string;
-  time: string;
-}
+import { useChatHistory, type ChatMsg } from "@/lib/use-chat-history";
 
 export default function AgentPage() {
   const params = useParams();
@@ -54,7 +49,7 @@ function AgentDashboard({ agent: initialAgent }: { agent: AgentData }) {
   const [tasks, setTasks] = usePersistedState<AgentTask[]>(`ff_agent_${initialAgent.id}_tasks`, initialAgent.tasks);
   const [taskInput, setTaskInput] = useState("");
   const [log, setLog] = usePersistedState<string[]>(`ff_agent_${initialAgent.id}_log`, initialAgent.log);
-  const [messages, setMessages] = usePersistedState<ChatMessage[]>(`ff_agent_${initialAgent.id}_chat`, [
+  const [messages, setMessages, clearChat] = useChatHistory(initialAgent.id, [
     { id: "greeting", role: "agent", text: initialAgent.greeting, time: now() },
   ]);
   const [chatInput, setChatInput] = useState("");
@@ -101,7 +96,7 @@ function AgentDashboard({ agent: initialAgent }: { agent: AgentData }) {
     const text = chatInput.trim();
     if (!text || typing) return;
 
-    const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", text, time: now() };
+    const userMsg: ChatMsg = { id: Date.now().toString(), role: "user", text, time: now() };
     setMessages((prev) => [...prev, userMsg]);
     setChatInput("");
     setTyping(true);
@@ -218,6 +213,13 @@ function AgentDashboard({ agent: initialAgent }: { agent: AgentData }) {
             <Sparkles className="h-4 w-4 text-accent" />
             <span className="text-xs font-medium text-text-bright">Чат с {initialAgent.name}</span>
             <span className="ml-auto text-[10px] text-text-dim">{initialAgent.model}</span>
+            <button
+              onClick={clearChat}
+              className="ml-2 rounded p-1 text-text-dim/40 transition-colors hover:bg-hp/10 hover:text-hp"
+              title="Очистить чат"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
           </div>
 
           {/* Messages */}

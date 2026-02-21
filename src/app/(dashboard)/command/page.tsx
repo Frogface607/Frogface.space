@@ -1,33 +1,28 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Mic, Sparkles } from "lucide-react";
+import { Send, Bot, User, Mic, Sparkles, Trash2 } from "lucide-react";
+import { useChatHistory, type ChatMsg } from "@/lib/use-chat-history";
 
-interface Message {
-  id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
-  timestamp: Date;
+function now() {
+  return new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 }
 
-const INITIAL_MESSAGES: Message[] = [
+const INITIAL_MESSAGES: ChatMsg[] = [
+  { id: "sys", role: "system", text: "🎮 Командный центр запущен. Moltbot онлайн. Глава 1: Фундамент.", time: "" },
   {
-    id: "1",
-    role: "system",
-    content: "🎮 Командный центр запущен. Moltbot онлайн. Глава 1: Фундамент.",
-    timestamp: new Date(),
-  },
-  {
-    id: "2",
+    id: "greeting",
     role: "assistant",
-    content:
-      "Привет, бро! 🤝 Я на связи. Командный центр запущен — теперь работаем отсюда, а не из Telegram.\n\nТвои активные квесты:\n• Запуск MyReply — 85% готово\n• Сайт Edison — 60% (критический)\n• Frogface.space — строим прямо сейчас\n\nЧто делаем? Готов к приказам, Архитектор.",
-    timestamp: new Date(),
+    text: "На связи, Архитектор. Командный центр запущен — все агенты в сборе.\n\nГотов к приказам. Что делаем?",
+    time: now(),
   },
 ];
 
+const SYSTEM_PROMPT =
+  "Ты — Moltbot, операционный директор Frogface Studio. Координируешь работу всех агентов, управляешь приоритетами, следишь за прогрессом проектов. Стиль общения: дружелюбный, лаконичный, с лёгким RPG-нарративом. Обращайся к пользователю 'Архитектор'. Отвечай на русском.";
+
 export default function CommandPage() {
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
+  const [messages, setMessages, clearChat] = useChatHistory("command", INITIAL_MESSAGES);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -39,30 +34,20 @@ export default function CommandPage() {
   const sendMessage = async () => {
     if (!input.trim() || isTyping) return;
 
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: input,
-      timestamp: new Date(),
-    };
-
+    const userMsg: ChatMsg = { id: Date.now().toString(), role: "user", text: input, time: now() };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
 
     const botMsgId = (Date.now() + 1).toString();
 
-    const SYSTEM_PROMPT =
-      "Ты — Moltbot, операционный директор Frogface Studio. Координируешь работу всех агентов, управляешь приоритетами, следишь за прогрессом проектов. Стиль общения: дружелюбный, лаконичный, с лёгким RPG-нарративом. Обращайся к пользователю 'Архитектор'. Отвечай на русском.";
-
     try {
       const history = messages
         .filter((m) => m.role !== "system")
         .map((m) => ({
           role: m.role === "user" ? ("user" as const) : ("assistant" as const),
-          content: m.content,
+          content: m.text,
         }));
-
       history.push({ role: "user", content: input });
 
       const res = await fetch("/api/chat", {
@@ -83,7 +68,7 @@ export default function CommandPage() {
       const decoder = new TextDecoder();
       let full = "";
 
-      setMessages((prev) => [...prev, { id: botMsgId, role: "assistant", content: "", timestamp: new Date() }]);
+      setMessages((prev) => [...prev, { id: botMsgId, role: "assistant", text: "", time: now() }]);
       setIsTyping(false);
 
       while (true) {
@@ -92,14 +77,14 @@ export default function CommandPage() {
         full += decoder.decode(value, { stream: true });
         const snapshot = full;
         setMessages((prev) =>
-          prev.map((m) => (m.id === botMsgId ? { ...m, content: snapshot } : m))
+          prev.map((m) => (m.id === botMsgId ? { ...m, text: snapshot } : m))
         );
       }
     } catch (err) {
       const errorText = err instanceof Error ? err.message : "Неизвестная ошибка";
       setMessages((prev) => [
         ...prev,
-        { id: botMsgId, role: "assistant", content: `⚠️ API недоступен: ${errorText}\n\n(Фоллбек) ${getSimulatedResponse(input)}`, timestamp: new Date() },
+        { id: botMsgId, role: "assistant", text: `⚠️ API: ${errorText}\n\n(Фоллбек) ${getSimulatedResponse(input)}`, time: now() },
       ]);
       setIsTyping(false);
     }
@@ -108,27 +93,34 @@ export default function CommandPage() {
   return (
     <div className="animate-fade-in flex h-[calc(100vh-5rem)] flex-col lg:h-[calc(100vh-3rem)]">
       {/* Header */}
-      <div className="flex items-center justify-between rounded-t-xl border border-border bg-bg-card px-5 py-3">
+      <div className="flex items-center justify-between rounded-t-xl border border-border bg-bg-card px-4 py-3 lg:px-5">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/20">
             <Bot className="h-5 w-5 text-accent" />
           </div>
           <div>
             <h1 className="text-sm font-semibold text-text-bright">Moltbot — Командный центр</h1>
-            <p className="text-[10px] text-xp">● Online · Claude Sonnet 4 · OpenClaw Gateway</p>
+            <p className="text-[10px] text-xp">● Online · Claude Sonnet 4 · OpenRouter</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-md bg-bg-deep px-2 py-1 text-[10px] text-text-dim">
-            Глава 1 · День 1
+          <span className="hidden rounded-md bg-bg-deep px-2 py-1 text-[10px] text-text-dim sm:inline-block">
+            Глава 1
           </span>
+          <button
+            onClick={clearChat}
+            className="rounded p-1.5 text-text-dim/40 transition-colors hover:bg-hp/10 hover:text-hp"
+            title="Очистить чат"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="flex-1 space-y-4 overflow-y-auto border-x border-border bg-bg-deep/50 p-5"
+        className="flex-1 space-y-4 overflow-y-auto border-x border-border bg-bg-deep/50 p-4 lg:p-5"
       >
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
@@ -145,7 +137,7 @@ export default function CommandPage() {
       <div className="rounded-b-xl border border-border bg-bg-card p-3">
         <div className="flex items-center gap-2">
           <button
-            className="rounded-lg p-2 text-text-dim transition-colors hover:bg-bg-hover hover:text-accent"
+            className="hidden rounded-lg p-2 text-text-dim transition-colors hover:bg-bg-hover hover:text-accent sm:block"
             title="Голосовой ввод (скоро)"
           >
             <Mic className="h-5 w-5" />
@@ -155,7 +147,7 @@ export default function CommandPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            placeholder="Пиши Moltbot... (команды: /status, /quests, /imagine)"
+            placeholder="Написать Moltbot..."
             className="flex-1 rounded-lg border border-border bg-bg-deep px-4 py-2.5 text-sm text-text placeholder:text-text-dim/40 focus:border-accent/50 focus:outline-none"
           />
           <button
@@ -166,8 +158,8 @@ export default function CommandPage() {
             <Send className="h-4 w-4" />
           </button>
         </div>
-        <div className="mt-2 flex gap-2">
-          {["/status", "/quests", "/report", "/imagine"].map((cmd) => (
+        <div className="mt-2 flex flex-wrap gap-1.5 lg:gap-2">
+          {["/status", "/quests", "/report"].map((cmd) => (
             <button
               key={cmd}
               onClick={() => setInput(cmd)}
@@ -182,12 +174,12 @@ export default function CommandPage() {
   );
 }
 
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message }: { message: ChatMsg }) {
   if (message.role === "system") {
     return (
       <div className="flex justify-center">
         <span className="rounded-full bg-accent/10 px-4 py-1.5 text-[10px] text-accent">
-          {message.content}
+          {message.text}
         </span>
       </div>
     );
@@ -209,16 +201,14 @@ function MessageBubble({ message }: { message: Message }) {
         )}
       </div>
       <div
-        className={`max-w-[70%] rounded-xl px-4 py-3 ${
+        className={`max-w-[80%] rounded-xl px-4 py-3 lg:max-w-[70%] ${
           isUser
             ? "bg-mana/10 text-text"
             : "border border-border/50 bg-bg-card text-text"
         }`}
       >
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
-        <p className="mt-1 text-[10px] text-text-dim">
-          {message.timestamp.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
-        </p>
+        <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.text}</p>
+        {message.time && <p className="mt-1 text-[10px] text-text-dim">{message.time}</p>}
       </div>
     </div>
   );
@@ -227,13 +217,13 @@ function MessageBubble({ message }: { message: Message }) {
 function getSimulatedResponse(input: string): string {
   const lower = input.toLowerCase();
   if (lower.includes("/status")) {
-    return "📊 Status Report:\n\n💰 Gold: 178K ₽ (target: 500K)\n⚡ Mana: 72/100 — good energy\n✨ XP Today: +340\n\n🎯 Active Quests: 7\n🔥 Critical: MyReply launch, Edison website\n\nОбщий вектор: положительный. Двигаемся.";
+    return "📊 Статус:\n\n💰 Gold: 178K ₽ (цель 500K)\n⚡ Мана: 72/100\n✨ XP: +340\n🎯 Квестов: 7 активных\n\nДвигаемся.";
   }
   if (lower.includes("/quests")) {
-    return "🎯 Active Quests:\n\n🔴 [BOSS] First 10 paying users — MyReply\n🔴 [CRIT] Edison website — close gestalt\n🟡 Frogface.space dashboard\n🟡 Receptor analysis\n🟢 Content strategy execution\n🟢 Agent office setup\n🟢 Voice command integration\n\nЧто атакуем первым?";
+    return "🎯 Активные квесты:\n\n🔴 [БОСС] 10 платящих — MyReply\n🔴 [КРИТ] Сайт Edison\n🟡 Frogface.space\n🟢 Контент-стратегия\n\nЧто атакуем?";
   }
   if (lower.includes("/report")) {
-    return "📋 Weekly Report — Chapter 1, Day 1:\n\n✅ Completed:\n• AI Proxy deployed on Vercel\n• Voice transcription fixed\n• Workspace optimized 4x\n• Moltbot running in tmux\n• First payment received\n\n🔜 Next:\n• Frogface.space MVP\n• MyReply marketing push\n• Edison website sprint\n\nXP earned this week: +1,200\nGold change: +0.5K ₽";
+    return "📋 Отчёт — Глава 1, День 1:\n\n✅ AI Proxy развёрнут\n✅ Голосовые работают\n✅ Рабочее пространство оптимизировано\n✅ Первый платёж получен\n\n🔜 Далее: Frogface MVP, MyReply маркетинг";
   }
-  return `Принял, бро. «${input}» — записал. Что с этим делаем дальше? Могу:\n\n1. Создать квест из этого\n2. Отправить агентам на исполнение\n3. Добавить в план на сегодня\n4. Просто запомнить\n\nТвой выбор, Архитектор.`;
+  return `Принял, Архитектор. «${input}» — записал.\n\n1. Создать квест\n2. Отправить агентам\n3. В план на сегодня\n\nТвой ход.`;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Zap,
   TrendingUp,
@@ -11,6 +11,11 @@ import {
   CheckCircle2,
   Circle,
   Plus,
+  Wifi,
+  WifiOff,
+  Database,
+  Bot,
+  Smartphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePersistedState } from "@/lib/use-persisted-state";
@@ -190,6 +195,8 @@ export default function HQPage() {
           <div className="h-full w-[3%] rounded-full bg-gradient-to-r from-accent to-mana" />
         </div>
       </div>
+
+      <SystemStatus />
     </div>
   );
 }
@@ -287,6 +294,53 @@ function LogEntry({ entry }: { entry: LogItem }) {
         {entry.text}
       </p>
       <p className="mt-0.5 text-[10px] text-text-dim">{entry.time}</p>
+    </div>
+  );
+}
+
+function SystemStatus() {
+  const [status, setStatus] = useState<{
+    openrouter: boolean;
+    supabase: boolean;
+    pwa: boolean;
+  }>({ openrouter: false, supabase: false, pwa: false });
+
+  useEffect(() => {
+    fetch("/api/chat")
+      .then((r) => r.json())
+      .then((d) => setStatus((s) => ({ ...s, openrouter: d.hasKey })))
+      .catch(() => {});
+
+    fetch("/api/status")
+      .then((r) => r.json())
+      .then((d) => setStatus((s) => ({ ...s, supabase: d.supabase })))
+      .catch(() => {});
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        setStatus((s) => ({ ...s, pwa: !!reg }));
+      });
+    }
+  }, []);
+
+  const items = [
+    { label: "OpenRouter AI", ok: status.openrouter, icon: Bot },
+    { label: "Supabase", ok: status.supabase, icon: Database },
+    { label: "PWA", ok: status.pwa, icon: Smartphone },
+  ];
+
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/50 bg-bg-card/50 px-4 py-2.5">
+      <span className="text-[10px] font-medium text-text-dim">Системы:</span>
+      {items.map((item) => (
+        <div key={item.label} className="flex items-center gap-1.5">
+          <item.icon className={cn("h-3 w-3", item.ok ? "text-xp" : "text-text-dim/30")} />
+          <span className={cn("text-[10px]", item.ok ? "text-text" : "text-text-dim/40")}>
+            {item.label}
+          </span>
+          <div className={cn("h-1.5 w-1.5 rounded-full", item.ok ? "bg-xp" : "bg-text-dim/20")} />
+        </div>
+      ))}
     </div>
   );
 }
