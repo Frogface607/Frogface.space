@@ -38,13 +38,15 @@ interface LogItem {
 }
 
 const INITIAL_QUESTS: Quest[] = [
-  { id: "q1", title: "Записать первое видео «Идущий к руке»", project: "Съёмка", xp: 300, priority: "boss", progress: 0, done: false },
-  { id: "q2", title: "Soft Launch MyReply: чаты + личные контакты", project: "MyReply", xp: 200, priority: "critical", progress: 0, done: false },
-  { id: "q3", title: "Загрузить меню Edison + пост о каталоге", project: "Edison", xp: 140, priority: "critical", progress: 0, done: false },
-  { id: "q4", title: "Настроить AI-копирайтера анонсов Edison", project: "Edison", xp: 150, priority: "critical", progress: 0, done: false },
-  { id: "q5", title: "UGC-челлендж MyReply: крутик-отзывы", project: "Воронка", xp: 150, priority: "critical", progress: 0, done: false },
-  { id: "q6", title: "Демо-видео MyReply (30-45 сек)", project: "MyReply", xp: 100, priority: "normal", progress: 0, done: false },
-  { id: "q7", title: "Первые 10 платящих на MyReply", project: "MyReply", xp: 800, priority: "boss", progress: 10, done: false },
+  { id: "q1", title: "Первые 10 платящих на MyReply", project: "MyReply", xp: 800, priority: "boss", progress: 10, done: false },
+  { id: "q2", title: "Запуск сайта Edison Bar — 11 дней", project: "Edison", xp: 500, priority: "boss", progress: 30, done: false },
+  { id: "q3", title: "Съёмки «Идущий к руке» (ср-чт-пт)", project: "YouTube", xp: 300, priority: "critical", progress: 0, done: false },
+  { id: "q4", title: "Промокоды MyReply 7 дней — раздать своим", project: "MyReply", xp: 200, priority: "critical", progress: 0, done: false },
+  { id: "q5", title: "Планёрка с Машей (стратегия Edison)", project: "Edison", xp: 150, priority: "critical", progress: 0, done: false },
+  { id: "q6", title: "Пост soft launch MyReply от Frogface-бота", project: "MyReply", xp: 150, priority: "critical", progress: 0, done: false },
+  { id: "q7", title: "UGC-конкурс «самый трешовый отзыв»", project: "MyReply", xp: 150, priority: "normal", progress: 0, done: false },
+  { id: "q8", title: "Freepik Pipeline: batch вывесок Edison", project: "Edison", xp: 100, priority: "normal", progress: 0, done: false },
+  { id: "q9", title: "Ритуал закрытия дня в Frogface.space", project: "Frogface", xp: 100, priority: "normal", progress: 0, done: false },
 ];
 
 const INITIAL_LOG: LogItem[] = [

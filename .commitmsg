@@ -1,22 +1,10 @@
-PWA + Supabase persistence + API for Custom GPT
+Chat persistence + rich prompts + system status widget
 
-PWA:
-- manifest.json with app metadata and theme colors
-- SVG icon (frog + sword) + generated PNG icons (192, 512, apple-touch)
-- Service worker with cache-first for static, network-first for pages
-- Meta tags: apple-web-app-capable, theme-color, viewport lock
-- Service worker registration in root layout
-
-Supabase:
-- Schema: kv_store, activity_log, chat_messages tables
-- usePersistedState hook: localStorage instant hydration + Supabase sync
-- Debounced writes (300ms) to avoid hammering the DB
-- Graceful fallback: works without Supabase (localStorage only)
-- Migrated all pages from useLocalStorage to usePersistedState
-
-API endpoints for Custom GPT Actions:
-- GET/POST /api/quests — read/add quests
-- GET/POST /api/log — read/add activity log entries
-- GET /api/status — system overview (quests, XP, log count)
-- OpenAPI spec at /openapi.json for ChatGPT Actions
-- Bearer token auth via API_SECRET env var
+- useChatHistory hook: localStorage + Supabase chat_messages sync
+- Agent chat and Command center now persist messages to Supabase
+- Clear chat button (Trash2) on agent pages and command center
+- Enriched all 8 agent system prompts with real project context
+  (MyReply metrics, Edison details, target audiences, frameworks)
+- System status widget on HQ: shows OpenRouter/Supabase/PWA status
+- Command center refactored to use unified ChatMsg type
+- Mobile improvements: hidden mic button on small screens, wider bubbles
