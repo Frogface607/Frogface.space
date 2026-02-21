@@ -1,8 +1,4 @@
-feat: add Quests page with 6 real quest chains + update HQ with real tasks
+fix: make auth optional — site works without env vars
 
-- /quests page: 47 quests in 6 chains from user's plans
-  - Edison Bar autonomy, MyReply first money, Video series,
-    Funnel, Frogface Studio, Content factory
-- Each chain: collapsible, progress ring, priority badges, XP, notes
-- HQ updated with real hot quests from screenshot
-- Quests added to sidebar navigation
+Auth was blocking all access because ADMIN_PASSWORD and SESSION_SECRET
+were not set on Vercel. Now middleware skips auth when vars are missing.
