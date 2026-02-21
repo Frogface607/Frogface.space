@@ -9,6 +9,7 @@ import {
   Terminal,
   Home,
   Gamepad2,
+  ScrollText,
   LogOut,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -16,7 +17,8 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "Штаб", icon: Home, description: "Главный экран" },
-  { href: "/player", label: "Игрок", icon: Gamepad2, description: "Статы и квесты" },
+  { href: "/quests", label: "Квесты", icon: ScrollText, description: "Журнал квестов" },
+  { href: "/player", label: "Игрок", icon: Gamepad2, description: "Статы и скиллы" },
   { href: "/projects", label: "Проекты", icon: FolderKanban, description: "Доска миссий" },
   { href: "/studio", label: "Студия", icon: Building2, description: "Офис агентов" },
   { href: "/command", label: "Команды", icon: Terminal, description: "Чат с Moltbot" },

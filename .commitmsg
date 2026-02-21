@@ -1,1 +1,7 @@
-feat: translate all UI to Russian + add interactive quests and daily log
+feat: add password auth + interactive Studio with agent controls
+
+- Login page with password gate (middleware + cookie session)
+- Logout button in sidebar
+- Route group (dashboard) for auth-protected pages
+- Studio rebuilt: toggle agent status, assign tasks, activity logs
+- Env vars: ADMIN_PASSWORD, SESSION_SECRET (set in Vercel)
