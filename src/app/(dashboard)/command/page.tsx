@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useChatHistory, type ChatMsg } from "@/lib/use-chat-history";
 import { speak, stopSpeaking, isSpeaking, preloadVoices } from "@/lib/tts";
+import { parseActions, executeActions, listActiveQuests } from "@/lib/quest-store";
 
 function now() {
   return new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
@@ -50,6 +51,28 @@ const SYSTEM_PROMPT = [
   "Стиль: дружелюбный, лаконичный, с RPG-нарративом. Обращайся «Архитектор». Русский язык.",
   "",
   "ВАЖНО: Если разговор идёт голосом — отвечай коротко и разговорно. Не пиши списки и буллеты — говори как друг.",
+  "",
+  "=== УПРАВЛЕНИЕ КВЕСТАМИ ===",
+  "Ты можешь создавать, завершать и показывать квесты. Используй action-блоки в ответе.",
+  "Формат (вставляй в конце ответа, можно несколько):",
+  "",
+  "Создать квест:     [QUEST:CREATE|название|проект|приоритет|xp]",
+  "  проект: MyReply, Edison, YouTube, Frogface, General",
+  "  приоритет: normal, critical, boss",
+  "  xp: число (100-800)",
+  "",
+  "Завершить квест:   [QUEST:COMPLETE|часть названия квеста]",
+  "Показать квесты:   [QUEST:LIST]",
+  "",
+  "Примеры:",
+  '  "Создаю квест! [QUEST:CREATE|Позвонить Маше по стратегии|Edison|critical|150]"',
+  '  "Отмечаю готовым. [QUEST:COMPLETE|Позвонить Маше]"',
+  '  "Вот активные: [QUEST:LIST]"',
+  "",
+  "Если пользователь просит создать задачу/квест — ВСЕГДА используй action-блок.",
+  "Если просит показать квесты/задачи — ВСЕГДА используй [QUEST:LIST].",
+  "Если говорит что сделал что-то — предложи завершить соответствующий квест.",
+  "Action-блоки ставь В КОНЦЕ текста, после своего ответа.",
 ].join("\n");
 
 export default function CommandPage() {
@@ -107,9 +130,15 @@ export default function CommandPage() {
         history.push({ role: "user", content: msg });
 
         const isVoice = voiceMode;
+        const activeQuests = listActiveQuests();
+        const questContext = activeQuests.length > 0
+          ? "\n\n=== ТЕКУЩИЕ КВЕСТЫ ===\n" + activeQuests.map(
+              (q, i) => `${i + 1}. [${q.priority}] ${q.title} (${q.project}, +${q.xp} XP, ${q.progress}%)`
+            ).join("\n")
+          : "\n\n=== ТЕКУЩИЕ КВЕСТЫ ===\nНет активных квестов.";
         const systemContent = isVoice
-          ? SYSTEM_PROMPT + "\n\n[Режим: голосовой диалог. Отвечай коротко, 2-4 предложения. Без маркдаун-форматирования.]"
-          : SYSTEM_PROMPT;
+          ? SYSTEM_PROMPT + questContext + "\n\n[Режим: голосовой диалог. Отвечай коротко, 2-4 предложения. Без маркдаун-форматирования.]"
+          : SYSTEM_PROMPT + questContext;
 
         const res = await fetch("/api/chat", {
           method: "POST",
@@ -142,7 +171,20 @@ export default function CommandPage() {
           );
         }
 
-        if (full) speakText(full);
+        // Parse and execute quest actions
+        const actions = parseActions(full);
+        if (actions.length > 0) {
+          const results = executeActions(actions);
+          const cleanedText = full.replace(/\[QUEST:.*?\]/g, "").trim();
+          const actionSummary = results.join("\n");
+          const finalText = cleanedText + (actionSummary ? "\n\n" + actionSummary : "");
+          setMessages((prev) =>
+            prev.map((m) => (m.id === botMsgId ? { ...m, text: finalText } : m)),
+          );
+          if (finalText) speakText(cleanedText);
+        } else {
+          if (full) speakText(full);
+        }
       } catch (err) {
         const errorText = err instanceof Error ? err.message : "Неизвестная ошибка";
         const fallback = `⚠️ API: ${errorText}\n\n(Фоллбек) ${getSimulatedResponse(msg)}`;
