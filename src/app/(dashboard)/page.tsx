@@ -58,20 +58,17 @@ const INITIAL_QUESTS: Quest[] = [
 ];
 
 const INITIAL_LOG: LogItem[] = [
-  { id: "d2a", time: "29 янв, вечер", text: "OpenClaw Gateway запущен на VPS Jino. Probe: OK. HTTP-мост создан.", type: "achievement" },
-  { id: "d2b", time: "29 янв, вечер", text: "Moltbot управляет квестами из чата — создаёт, завершает, показывает голосом.", type: "achievement" },
-  { id: "d2c", time: "29 янв, день", text: "Полноценный голосовой режим: микрофон + TTS ответы. Замена ChatGPT Voice.", type: "achievement" },
-  { id: "d2d", time: "29 янв, день", text: "Интерактивная Летопись: Game Master ведёт ритуал закрытия дня.", type: "achievement" },
-  { id: "d2e", time: "29 янв, день", text: "Zen Mode: фокус на одном квесте, минимум отвлечений.", type: "achievement" },
-  { id: "d2f", time: "29 янв, день", text: "Мана чек-ин: ежедневная проверка энергии 1-5, влияет на нагрузку.", type: "xp" },
-  { id: "d2g", time: "29 янв, день", text: "Голосовой Поток: наговариваешь → AI структурирует → в лог.", type: "xp" },
-  { id: "d2h", time: "29 янв, утро", text: "День 2 начинается. Архитектор прокачивает систему.", type: "story" },
-  { id: "d1a", time: "28 янв, вечер", text: "Frogface.space построен с нуля. Дашборд, агенты, командный центр — всё живое.", type: "achievement" },
-  { id: "d1b", time: "28 янв, вечер", text: "OpenClaw код интегрирован — готов к подключению VPS.", type: "achievement" },
-  { id: "d1c", time: "28 янв, день", text: "8 AI-агентов получили персональные промпты с полным контекстом Архитектора.", type: "xp" },
-  { id: "d1d", time: "28 янв, день", text: "PWA установка готова. Frogface.space теперь нативное приложение.", type: "achievement" },
-  { id: "d1e", time: "28 янв, день", text: "OpenRouter интеграция: живые AI-ответы вместо заглушек.", type: "achievement" },
-  { id: "d1f", time: "28 янв, утро", text: "Глава 1 начинается. Архитектор входит в командный центр.", type: "story" },
+  { id: "d1k", time: "День 1, ночь", text: "OpenClaw Gateway поднят на VPS Jino. Probe: OK. HTTP-мост создан.", type: "achievement" },
+  { id: "d1j", time: "День 1, ночь", text: "Moltbot управляет квестами из чата — создавай и завершай голосом.", type: "achievement" },
+  { id: "d1i", time: "День 1, вечер", text: "Голосовой режим: микрофон + TTS ответы на русском. Замена ChatGPT Voice.", type: "achievement" },
+  { id: "d1h", time: "День 1, вечер", text: "Интерактивная Летопись: Game Master ведёт ритуал закрытия дня.", type: "achievement" },
+  { id: "d1g", time: "День 1, вечер", text: "Zen Mode + Мана чек-ин + Голосовой Поток — три новых механики.", type: "achievement" },
+  { id: "d1f", time: "День 1, день", text: "OpenClaw интеграция: код готов, VPS настроен, осталось допилить мост.", type: "xp" },
+  { id: "d1e", time: "День 1, день", text: "8 AI-агентов с персональными промптами и полным контекстом.", type: "xp" },
+  { id: "d1d", time: "День 1, день", text: "PWA установка + мобильная вёрстка на всех страницах.", type: "achievement" },
+  { id: "d1c", time: "День 1, день", text: "OpenRouter: живые AI-ответы вместо заглушек.", type: "achievement" },
+  { id: "d1b", time: "День 1, день", text: "API endpoints для Custom GPT Actions.", type: "xp" },
+  { id: "d1a", time: "День 1, утро", text: "Frogface.space построен с нуля. Глава 1 начинается.", type: "story" },
 ];
 
 const MANA_LABELS = ["", "Пустой", "Тяжело", "Норм", "Хорошо", "Огонь"];
@@ -384,8 +381,8 @@ export default function HQPage() {
             </p>
           </div>
           <div className="sm:text-right">
-            <p className="text-2xl font-bold text-accent">День 2</p>
-            <p className="text-[10px] text-text-dim">осталось 28 дней</p>
+            <p className="text-2xl font-bold text-accent">День 1</p>
+            <p className="text-[10px] text-text-dim">осталось 29 дней</p>
           </div>
         </div>
         <div className="mt-4 h-2 rounded-full bg-bg-deep">
