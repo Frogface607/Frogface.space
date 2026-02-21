@@ -1,13 +1,13 @@
 import { NextRequest } from "next/server";
 
 const MODEL_MAP: Record<string, string> = {
-  "Claude Sonnet 4": "anthropic/claude-sonnet-4-20250514",
-  "Claude Opus": "anthropic/claude-opus-4-20250514",
-  "Claude Haiku": "anthropic/claude-3.5-haiku-20241022",
-  "FreePik API": "anthropic/claude-3.5-haiku-20241022",
+  "Claude Sonnet 4": "anthropic/claude-sonnet-4",
+  "Claude Opus": "anthropic/claude-sonnet-4",
+  "Claude Haiku": "anthropic/claude-haiku-4.5",
+  "FreePik API": "anthropic/claude-haiku-4.5",
 };
 
-const DEFAULT_MODEL = "anthropic/claude-sonnet-4-20250514";
+const DEFAULT_MODEL = "anthropic/claude-sonnet-4";
 
 interface ChatMsg {
   role: "system" | "user" | "assistant";

@@ -1,13 +1,7 @@
-Mobile responsive + real AI chat via OpenRouter
+Better error visibility for AI chat + redeploy trigger
 
-- Fix all pages for mobile: responsive grids, compact padding, flex-wrap
-- HQ: 2-col stats on mobile, stacked quests/log sections
-- Player: vertical layout on small screens, compact avatar + credo
-- Projects: single column on mobile, wrapped metrics
-- Studio: single column agent cards, stacked chat/sidebar on mobile
-- Quests: tighter padding on chain headers
-- Command: adjusted viewport height for mobile top bar
-- Add /api/chat streaming proxy to OpenRouter API
-- Agent chat pages now use real AI with streaming responses
-- Command center (Moltbot) uses real AI with streaming
-- Fallback to simulated responses when API is unavailable
+- Add GET /api/chat health check (shows if API key is configured)
+- Show actual error messages in chat instead of silent fallback
+- Better error handling: parse OpenRouter error responses
+- Wrap fetch in try-catch for network failures
+- Trigger Vercel redeploy to pick up OPENROUTER_API_KEY env var

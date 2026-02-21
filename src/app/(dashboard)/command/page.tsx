@@ -76,7 +76,7 @@ export default function CommandPage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-        throw new Error(err.error || err.details || `API error ${res.status}`);
+        throw new Error([err.error, err.details, err.model].filter(Boolean).join(" | "));
       }
 
       const reader = res.body!.getReader();
