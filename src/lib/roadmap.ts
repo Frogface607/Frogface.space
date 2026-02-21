@@ -41,7 +41,24 @@ export const ROADMAP = {
     },
   },
 
+  completedDay2: [
+    "Zen Mode — фокус на одном квесте, минимум отвлечений",
+    "Мана чек-ин — ежедневная энергия 1-5",
+    "Голосовой Поток — наговаривай → AI структурирует → лог",
+    "Интерактивная Летопись — Game Master ведёт ритуал закрытия дня",
+    "Голосовой режим Moltbot — микрофон + TTS, замена ChatGPT Voice",
+    "Квесты из чата — создавай/завершай голосом или текстом",
+    "OpenClaw Gateway поднят на VPS (probe: OK)",
+    "HTTP-мост создан (нужно допилить WS-протокол)",
+  ],
+
   futurePipeline: [
+    {
+      name: "Допилить HTTP-мост OpenClaw",
+      description: "Подогнать WS RPC протокол в bridge.mjs, добавить env в Vercel → единая память",
+      priority: "high",
+      blockedBy: "WS protocol debug (10-15 мин)",
+    },
     {
       name: "Freepik Integration",
       description: "Tinder-модель для визуального контента: batch generate → approve/reject → autopost",
@@ -49,28 +66,28 @@ export const ROADMAP = {
       blockedBy: "Freepik API access",
     },
     {
-      name: "VPS Persistence",
-      description: "Перенос данных с localStorage на VPS (рядом с Moltbot). SQLite или JSON.",
-      priority: "medium",
-      blockedBy: "VPS setup",
-    },
-    {
       name: "RAG для агентов",
-      description: "Retrieval Augmented Generation — агенты ищут по базе знаний перед ответом",
-      priority: "low",
-      blockedBy: "Нужен объём контекста",
+      description: "OpenClaw LanceDB → агенты ищут по базе знаний. Автоматически после моста.",
+      priority: "high",
+      blockedBy: "HTTP-мост OpenClaw",
     },
     {
-      name: "Ритуал закрытия дня",
-      description: "Ежедневный UI в Frogface: что сделал, что понял, сколько маны осталось",
+      name: "Telegram ↔ Frogface синхронизация",
+      description: "Единая память и квесты между Telegram-ботом и веб-дашбордом",
       priority: "medium",
-      blockedBy: null,
+      blockedBy: "HTTP-мост OpenClaw",
     },
     {
       name: "Chrome Extension MyReply",
       description: "Расширение для публикации ответов прямо на площадках",
       priority: "medium",
       blockedBy: "Soft launch validation",
+    },
+    {
+      name: "Уведомления (Push)",
+      description: "Браузерные push-уведомления для напоминаний и дедлайнов",
+      priority: "low",
+      blockedBy: null,
     },
   ],
 

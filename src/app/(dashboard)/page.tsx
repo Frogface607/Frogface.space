@@ -51,20 +51,27 @@ const INITIAL_QUESTS: Quest[] = [
   { id: "q4", title: "Промокоды MyReply 7 дней — раздать своим", project: "MyReply", xp: 200, priority: "critical", progress: 0, done: false },
   { id: "q5", title: "Планёрка с Машей (стратегия Edison)", project: "Edison", xp: 150, priority: "critical", progress: 0, done: false },
   { id: "q6", title: "Пост soft launch MyReply от Frogface-бота", project: "MyReply", xp: 150, priority: "critical", progress: 0, done: false },
-  { id: "q7", title: "Поднять OpenClaw Gateway на VPS (Jino)", project: "Frogface", xp: 200, priority: "critical", progress: 70, done: false },
+  { id: "q7", title: "Допилить HTTP-мост OpenClaw → frogface.space", project: "Frogface", xp: 200, priority: "critical", progress: 80, done: false },
   { id: "q8", title: "UGC-конкурс «самый трешовый отзыв»", project: "MyReply", xp: 150, priority: "normal", progress: 0, done: false },
   { id: "q9", title: "Freepik Pipeline: batch вывесок Edison", project: "Edison", xp: 100, priority: "normal", progress: 0, done: false },
+  { id: "q10", title: "Добавить OPENCLAW_URL + TOKEN в Vercel", project: "Frogface", xp: 100, priority: "critical", progress: 0, done: false },
 ];
 
 const INITIAL_LOG: LogItem[] = [
+  { id: "d2a", time: "29 янв, вечер", text: "OpenClaw Gateway запущен на VPS Jino. Probe: OK. HTTP-мост создан.", type: "achievement" },
+  { id: "d2b", time: "29 янв, вечер", text: "Moltbot управляет квестами из чата — создаёт, завершает, показывает голосом.", type: "achievement" },
+  { id: "d2c", time: "29 янв, день", text: "Полноценный голосовой режим: микрофон + TTS ответы. Замена ChatGPT Voice.", type: "achievement" },
+  { id: "d2d", time: "29 янв, день", text: "Интерактивная Летопись: Game Master ведёт ритуал закрытия дня.", type: "achievement" },
+  { id: "d2e", time: "29 янв, день", text: "Zen Mode: фокус на одном квесте, минимум отвлечений.", type: "achievement" },
+  { id: "d2f", time: "29 янв, день", text: "Мана чек-ин: ежедневная проверка энергии 1-5, влияет на нагрузку.", type: "xp" },
+  { id: "d2g", time: "29 янв, день", text: "Голосовой Поток: наговариваешь → AI структурирует → в лог.", type: "xp" },
+  { id: "d2h", time: "29 янв, утро", text: "День 2 начинается. Архитектор прокачивает систему.", type: "story" },
   { id: "d1a", time: "28 янв, вечер", text: "Frogface.space построен с нуля. Дашборд, агенты, командный центр — всё живое.", type: "achievement" },
-  { id: "d1b", time: "28 янв, вечер", text: "OpenClaw подключён к Frogface — RAG + AI через VPS вместо костылей.", type: "achievement" },
+  { id: "d1b", time: "28 янв, вечер", text: "OpenClaw код интегрирован — готов к подключению VPS.", type: "achievement" },
   { id: "d1c", time: "28 янв, день", text: "8 AI-агентов получили персональные промпты с полным контекстом Архитектора.", type: "xp" },
   { id: "d1d", time: "28 янв, день", text: "PWA установка готова. Frogface.space теперь нативное приложение.", type: "achievement" },
-  { id: "d1e", time: "28 янв, день", text: "Мобильная вёрстка починена на всех страницах.", type: "xp" },
-  { id: "d1f", time: "28 янв, день", text: "OpenRouter интеграция: живые AI-ответы вместо заглушек.", type: "achievement" },
-  { id: "d1g", time: "28 янв, день", text: "API endpoints для Custom GPT Actions: /quests, /log, /status.", type: "xp" },
-  { id: "d1h", time: "28 янв, утро", text: "Глава 1 начинается. Архитектор входит в командный центр.", type: "story" },
+  { id: "d1e", time: "28 янв, день", text: "OpenRouter интеграция: живые AI-ответы вместо заглушек.", type: "achievement" },
+  { id: "d1f", time: "28 янв, утро", text: "Глава 1 начинается. Архитектор входит в командный центр.", type: "story" },
 ];
 
 const MANA_LABELS = ["", "Пустой", "Тяжело", "Норм", "Хорошо", "Огонь"];
