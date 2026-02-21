@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Frogface.space — Life OS",
-  description: "Personal Life Operating System. RPG Engine. Agent Studio. Command Center.",
+  description: "Персональная операционная система жизни. RPG-движок. Студия агентов. Командный центр.",
 };
 
 export default function RootLayout({

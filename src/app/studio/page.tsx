@@ -14,7 +14,7 @@ import {
 const AGENTS = [
   {
     name: "Moltbot",
-    role: "Operations Director",
+    role: "Операционный директор",
     desc: "Операционный мозг. Логирование, контекст, менеджмент задач и агентов.",
     icon: Brain,
     status: "active",
@@ -24,7 +24,7 @@ const AGENTS = [
   },
   {
     name: "Game Master",
-    role: "Narrative Engine",
+    role: "Нарративный движок",
     desc: "Нарратив, ачивки, weekly reports. Превращает прогресс в историю.",
     icon: Gamepad2,
     status: "active",
@@ -34,7 +34,7 @@ const AGENTS = [
   },
   {
     name: "Analyst",
-    role: "Data & Strategy",
+    role: "Данные и стратегия",
     desc: "Анализ метрик, воронок, прогноз успеха, приоритизация задач.",
     icon: BarChart3,
     status: "active",
@@ -44,7 +44,7 @@ const AGENTS = [
   },
   {
     name: "Marketer",
-    role: "Growth & Research",
+    role: "Рост и исследования",
     desc: "Исследования рынка, гипотезы, стратегии роста, конкурентный анализ.",
     icon: Megaphone,
     status: "idle",
@@ -53,8 +53,8 @@ const AGENTS = [
     color: "from-green-500 to-emerald-400",
   },
   {
-    name: "Content Creator",
-    role: "SMM & Copy",
+    name: "Контент-мейкер",
+    role: "SMM и копирайт",
     desc: "Постинг, копирайт, соцсети. Автономный контент-конвейер.",
     icon: PenTool,
     status: "idle",
@@ -63,8 +63,8 @@ const AGENTS = [
     color: "from-pink-500 to-rose-400",
   },
   {
-    name: "Designer",
-    role: "Visual Production",
+    name: "Дизайнер",
+    role: "Визуальное производство",
     desc: "Генерация изображений, баннеров, креативов. FreePik + AI.",
     icon: Palette,
     status: "idle",
@@ -73,8 +73,8 @@ const AGENTS = [
     color: "from-orange-500 to-red-400",
   },
   {
-    name: "Sales Agent",
-    role: "Revenue & Conversion",
+    name: "Сейлз-агент",
+    role: "Выручка и конверсия",
     desc: "Автоматизированные воронки, B2B-outreach, конверсия лидов.",
     icon: ShoppingCart,
     status: "standby",
@@ -83,8 +83,8 @@ const AGENTS = [
     color: "from-emerald-500 to-teal-400",
   },
   {
-    name: "Guardian",
-    role: "Anti-Chaos Shield",
+    name: "Страж",
+    role: "Щит от хаоса",
     desc: "Pre-mortem анализ, пожарные сценарии, защита от распыления.",
     icon: Shield,
     status: "active",
@@ -95,9 +95,9 @@ const AGENTS = [
 ];
 
 const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
-  active: { label: "Active", color: "text-xp", dot: "bg-xp" },
-  idle: { label: "Idle", color: "text-gold", dot: "bg-gold" },
-  standby: { label: "Standby", color: "text-text-dim", dot: "bg-text-dim" },
+  active: { label: "Активен", color: "text-xp", dot: "bg-xp" },
+  idle: { label: "Ожидание", color: "text-gold", dot: "bg-gold" },
+  standby: { label: "В резерве", color: "text-text-dim", dot: "bg-text-dim" },
 };
 
 export default function StudioPage() {
@@ -115,15 +115,15 @@ export default function StudioPage() {
         </div>
         <div className="flex gap-3">
           <div className="rounded-lg border border-border bg-bg-card px-3 py-2">
-            <p className="text-[10px] text-text-dim">Active Agents</p>
+            <p className="text-[10px] text-text-dim">Активные агенты</p>
             <p className="text-lg font-bold text-xp">{activeCount}/{AGENTS.length}</p>
           </div>
           <div className="rounded-lg border border-border bg-bg-card px-3 py-2">
-            <p className="text-[10px] text-text-dim">Total Tasks</p>
+            <p className="text-[10px] text-text-dim">Всего задач</p>
             <p className="text-lg font-bold text-accent">{totalTasks}</p>
           </div>
           <div className="rounded-lg border border-border bg-bg-card px-3 py-2">
-            <p className="text-[10px] text-text-dim">API Cost Today</p>
+            <p className="text-[10px] text-text-dim">API за сегодня</p>
             <p className="text-lg font-bold text-gold">~$2.40</p>
           </div>
         </div>
@@ -133,9 +133,9 @@ export default function StudioPage() {
       <div className="rounded-xl border border-accent/20 bg-accent/5 p-4">
         <div className="flex items-center justify-center gap-2 text-xs text-accent">
           <Bot className="h-4 w-4" />
-          <span className="font-medium">Hierarchy:</span>
+          <span className="font-medium">Иерархия:</span>
           <span className="text-text-dim">
-            You (Architect) → Moltbot (Director) → Department Agents → Tasks
+            Ты (Архитектор) → Moltbot (Директор) → Агенты отделов → Задачи
           </span>
         </div>
       </div>
@@ -169,10 +169,10 @@ export default function StudioPage() {
                   <div className="mt-3 flex items-center gap-4">
                     <span className="flex items-center gap-1 text-[10px] text-text-dim">
                       <Activity className="h-3 w-3" />
-                      {agent.tasks} tasks
+                      {agent.tasks} задач
                     </span>
                     <span className="text-[10px] text-text-dim">
-                      Model: <span className="text-text">{agent.model}</span>
+                      Модель: <span className="text-text">{agent.model}</span>
                     </span>
                   </div>
                 </div>
@@ -187,7 +187,7 @@ export default function StudioPage() {
         <p className="text-center text-xs italic text-text-dim">
           &quot;Никаких людей, но множество агентов. Они сильно умнее, сильно лучше,
           сильно прокачаннее в плане знаний.&quot;
-          <span className="ml-2 text-accent">— Sergey</span>
+          <span className="ml-2 text-accent">— Сергей</span>
         </p>
       </div>
     </div>

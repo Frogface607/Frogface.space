@@ -14,14 +14,14 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: "1",
     role: "system",
-    content: "🎮 Command Center initialized. Moltbot online. Chapter 1: Foundation.",
+    content: "🎮 Командный центр запущен. Moltbot онлайн. Глава 1: Фундамент.",
     timestamp: new Date(),
   },
   {
     id: "2",
     role: "assistant",
     content:
-      "Привет, бро! 🤝 Я на связи. Command Center запущен — теперь работаем отсюда, а не из Telegram.\n\nТвои активные квесты:\n• MyReply Launch — 85% ready\n• Edison Website — 60% (critical)\n• Frogface.space — building now\n\nЧто делаем? Готов к приказам, Архитектор.",
+      "Привет, бро! 🤝 Я на связи. Командный центр запущен — теперь работаем отсюда, а не из Telegram.\n\nТвои активные квесты:\n• Запуск MyReply — 85% готово\n• Сайт Edison — 60% (критический)\n• Frogface.space — строим прямо сейчас\n\nЧто делаем? Готов к приказам, Архитектор.",
     timestamp: new Date(),
   },
 ];
@@ -72,13 +72,13 @@ export default function CommandPage() {
             <Bot className="h-5 w-5 text-accent" />
           </div>
           <div>
-            <h1 className="text-sm font-semibold text-text-bright">Moltbot — Command Center</h1>
+            <h1 className="text-sm font-semibold text-text-bright">Moltbot — Командный центр</h1>
             <p className="text-[10px] text-xp">● Online · Claude Sonnet 4 · OpenClaw Gateway</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <span className="rounded-md bg-bg-deep px-2 py-1 text-[10px] text-text-dim">
-            Chapter 1 · Day 1
+            Глава 1 · День 1
           </span>
         </div>
       </div>
@@ -94,7 +94,7 @@ export default function CommandPage() {
         {isTyping && (
           <div className="flex items-center gap-2 text-sm text-text-dim">
             <Bot className="h-4 w-4 animate-pulse text-accent" />
-            <span className="animate-pulse">Moltbot thinking...</span>
+            <span className="animate-pulse">Moltbot думает...</span>
           </div>
         )}
       </div>
@@ -104,7 +104,7 @@ export default function CommandPage() {
         <div className="flex items-center gap-2">
           <button
             className="rounded-lg p-2 text-text-dim transition-colors hover:bg-bg-hover hover:text-accent"
-            title="Voice input (coming soon)"
+            title="Голосовой ввод (скоро)"
           >
             <Mic className="h-5 w-5" />
           </button>
@@ -113,7 +113,7 @@ export default function CommandPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            placeholder="Talk to Moltbot... (commands: /status, /quests, /imagine)"
+            placeholder="Пиши Moltbot... (команды: /status, /quests, /imagine)"
             className="flex-1 rounded-lg border border-border bg-bg-deep px-4 py-2.5 text-sm text-text placeholder:text-text-dim/40 focus:border-accent/50 focus:outline-none"
           />
           <button
@@ -193,5 +193,5 @@ function getSimulatedResponse(input: string): string {
   if (lower.includes("/report")) {
     return "📋 Weekly Report — Chapter 1, Day 1:\n\n✅ Completed:\n• AI Proxy deployed on Vercel\n• Voice transcription fixed\n• Workspace optimized 4x\n• Moltbot running in tmux\n• First payment received\n\n🔜 Next:\n• Frogface.space MVP\n• MyReply marketing push\n• Edison website sprint\n\nXP earned this week: +1,200\nGold change: +0.5K ₽";
   }
-  return `Принял, бро. "${input}" — записал. Что с этим делаем дальше? Могу:\n\n1. Создать квест из этого\n2. Отправить агентам на исполнение\n3. Добавить в план на сегодня\n4. Просто запомнить\n\nТвой выбор, Архитектор.`;
+  return `Принял, бро. «${input}» — записал. Что с этим делаем дальше? Могу:\n\n1. Создать квест из этого\n2. Отправить агентам на исполнение\n3. Добавить в план на сегодня\n4. Просто запомнить\n\nТвой выбор, Архитектор.`;
 }

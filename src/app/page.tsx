@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import {
   Zap,
   TrendingUp,
@@ -5,151 +8,180 @@ import {
   Clock,
   Flame,
   Trophy,
+  CheckCircle2,
+  Circle,
+  Plus,
+  ScrollText,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Quest {
+  id: string;
+  title: string;
+  project: string;
+  xp: number;
+  priority: "normal" | "critical" | "boss";
+  progress: number;
+  done: boolean;
+}
+
+interface LogItem {
+  id: string;
+  time: string;
+  text: string;
+  type: "story" | "achievement" | "gold" | "xp" | "log";
+}
+
+const INITIAL_QUESTS: Quest[] = [
+  { id: "q1", title: "Запуск MyReply v1", project: "MyReply", xp: 500, priority: "critical", progress: 85, done: false },
+  { id: "q2", title: "Сайт Edison Bar — закрыть гештальт", project: "Edison", xp: 300, priority: "critical", progress: 60, done: false },
+  { id: "q3", title: "Дашборд Frogface.space", project: "Frogface", xp: 200, priority: "normal", progress: 15, done: false },
+  { id: "q4", title: "Анализ Receptor — пре-продакшн", project: "Receptor", xp: 150, priority: "normal", progress: 30, done: false },
+  { id: "q5", title: "Первые 10 платящих на MyReply", project: "MyReply", xp: 800, priority: "boss", progress: 10, done: false },
+];
+
+const INITIAL_LOG: LogItem[] = [
+  { id: "l1", time: "только что", text: "Глава 1 начинается. Архитектор входит в командный центр.", type: "story" },
+  { id: "l2", time: "2ч назад", text: "Прокси Moltbot развёрнут. Голосовые разблокированы.", type: "achievement" },
+  { id: "l3", time: "вчера", text: "Первый платёж: 490₽. Золото +0.5K.", type: "gold" },
+  { id: "l4", time: "2 дня назад", text: "AI Proxy создан. Геоблокировка обойдена.", type: "achievement" },
+  { id: "l5", time: "3 дня назад", text: "Воркспейс оптимизирован. Расход токенов снижен в 4 раза.", type: "xp" },
+];
 
 export default function HQPage() {
+  const [quests, setQuests] = useState(INITIAL_QUESTS);
+  const [log, setLog] = useState(INITIAL_LOG);
+  const [logInput, setLogInput] = useState("");
+
+  const toggleQuest = (id: string) => {
+    setQuests((prev) =>
+      prev.map((q) => {
+        if (q.id !== id) return q;
+        const done = !q.done;
+        if (done) {
+          setLog((l) => [
+            { id: Date.now().toString(), time: "сейчас", text: `Квест выполнен: ${q.title} (+${q.xp} XP)`, type: "xp" },
+            ...l,
+          ]);
+        }
+        return { ...q, done, progress: done ? 100 : q.progress };
+      })
+    );
+  };
+
+  const addLogEntry = () => {
+    if (!logInput.trim()) return;
+    setLog((prev) => [
+      { id: Date.now().toString(), time: "сейчас", text: logInput, type: "log" },
+      ...prev,
+    ]);
+    setLogInput("");
+  };
+
+  const completedXp = quests.filter((q) => q.done).reduce((s, q) => s + q.xp, 0);
+  const activeCount = quests.filter((q) => !q.done).length;
+
   return (
     <div className="animate-fade-in space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-text-bright">
           Добро пожаловать в игру
         </h1>
         <p className="mt-1 text-sm text-text-dim">
-          Chapter 1 — &quot;Foundation&quot; · Day 1 · February 2026
+          Глава 1 — &quot;Фундамент&quot; · День 1 · Февраль 2026
         </p>
       </div>
 
-      {/* Top stats */}
       <div className="grid grid-cols-4 gap-4">
         <StatCard
           icon={<TrendingUp className="h-5 w-5 text-gold" />}
-          label="Gold (MRR)"
+          label="Золото (MRR)"
           value="178K ₽"
-          delta="+12% from last month"
+          delta="+12% за месяц"
           accent="border-gold/30"
         />
         <StatCard
           icon={<Zap className="h-5 w-5 text-mana" />}
-          label="Mana (Energy)"
+          label="Мана (Энергия)"
           value="72/100"
-          delta="Good — keep moving"
+          delta="В норме — двигаемся"
           accent="border-mana/30"
         />
         <StatCard
           icon={<Flame className="h-5 w-5 text-xp" />}
-          label="XP Today"
-          value="+340"
-          delta="3 quests completed"
+          label="Опыт сегодня"
+          value={`+${340 + completedXp}`}
+          delta={`${3 + quests.filter((q) => q.done).length} квестов выполнено`}
           accent="border-xp/30"
         />
         <StatCard
           icon={<Target className="h-5 w-5 text-accent" />}
-          label="Active Quests"
-          value="7"
-          delta="2 critical, 5 normal"
+          label="Активные квесты"
+          value={String(activeCount)}
+          delta={`${quests.filter((q) => q.done).length} завершено`}
           accent="border-accent/30"
         />
       </div>
 
-      {/* Two columns */}
       <div className="grid grid-cols-3 gap-6">
-        {/* Active quests */}
         <div className="col-span-2 rounded-xl border border-border bg-bg-card p-5">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-bright">
             <Target className="h-4 w-4 text-accent" />
-            Active Quests
+            Активные квесты
           </h2>
           <div className="space-y-3">
-            <QuestRow
-              title="Launch MyReply v1"
-              project="MyReply"
-              xp={500}
-              priority="critical"
-              progress={85}
-            />
-            <QuestRow
-              title="Edison Bar website — close the gestalt"
-              project="Edison"
-              xp={300}
-              priority="critical"
-              progress={60}
-            />
-            <QuestRow
-              title="Setup Frogface.space dashboard"
-              project="Frogface"
-              xp={200}
-              priority="normal"
-              progress={15}
-            />
-            <QuestRow
-              title="Receptor pre-production analysis"
-              project="Receptor"
-              xp={150}
-              priority="normal"
-              progress={30}
-            />
-            <QuestRow
-              title="First 10 paying users on MyReply"
-              project="MyReply"
-              xp={800}
-              priority="boss"
-              progress={10}
-            />
+            {quests.map((q) => (
+              <QuestRow key={q.id} quest={q} onToggle={toggleQuest} />
+            ))}
           </div>
         </div>
 
-        {/* Recent activity / Game Master log */}
         <div className="rounded-xl border border-border bg-bg-card p-5">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-bright">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-bright">
             <Trophy className="h-4 w-4 text-gold" />
-            Game Master Log
+            Летопись
           </h2>
-          <div className="space-y-3">
-            <LogEntry
-              time="just now"
-              text="Chapter 1 begins. The Architect enters the command center."
-              type="story"
+
+          <div className="mb-3 flex gap-2">
+            <input
+              type="text"
+              value={logInput}
+              onChange={(e) => setLogInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addLogEntry()}
+              placeholder="Записать в лог..."
+              className="flex-1 rounded-lg border border-border bg-bg-deep px-3 py-1.5 text-xs text-text placeholder:text-text-dim/40 focus:border-accent/50 focus:outline-none"
             />
-            <LogEntry
-              time="2h ago"
-              text="Moltbot proxy deployed. Voice transcription unlocked."
-              type="achievement"
-            />
-            <LogEntry
-              time="yesterday"
-              text="First payment received: 490₽. Gold +0.5K."
-              type="gold"
-            />
-            <LogEntry
-              time="2 days ago"
-              text="AI Proxy route created. Geo-blocking bypassed."
-              type="achievement"
-            />
-            <LogEntry
-              time="3 days ago"
-              text="Workspace optimized. Token cost reduced 4x."
-              type="xp"
-            />
+            <button
+              onClick={addLogEntry}
+              disabled={!logInput.trim()}
+              className="rounded-lg bg-accent/20 px-2 text-accent transition-colors hover:bg-accent/30 disabled:opacity-30"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
+            {log.map((entry) => (
+              <LogEntry key={entry.id} entry={entry} />
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Chapter progress */}
       <div className="rounded-xl border border-border bg-bg-card p-5">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="flex items-center gap-2 text-sm font-semibold text-text-bright">
               <Clock className="h-4 w-4 text-mana" />
-              Chapter 1: Foundation
+              Глава 1: Фундамент
             </h2>
             <p className="mt-1 text-xs text-text-dim">
-              30-day sprint · Build the base, launch products, reach 500K Gold
+              30-дневный спринт · Построить базу, запустить продукты, достичь 500K Gold
             </p>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold text-accent">Day 1</p>
-            <p className="text-[10px] text-text-dim">29 days remaining</p>
+            <p className="text-2xl font-bold text-accent">День 1</p>
+            <p className="text-[10px] text-text-dim">осталось 29 дней</p>
           </div>
         </div>
         <div className="mt-4 h-2 rounded-full bg-bg-deep">
@@ -185,70 +217,74 @@ function StatCard({
   );
 }
 
-function QuestRow({
-  title,
-  project,
-  xp,
-  priority,
-  progress,
-}: {
-  title: string;
-  project: string;
-  xp: number;
-  priority: "normal" | "critical" | "boss";
-  progress: number;
-}) {
+function QuestRow({ quest, onToggle }: { quest: Quest; onToggle: (id: string) => void }) {
   const priorityColors = {
     normal: "bg-mana/20 text-mana",
     critical: "bg-hp/20 text-hp",
     boss: "bg-gold/20 text-gold",
   };
+  const priorityLabels = { normal: "обычный", critical: "крит", boss: "БОСС" };
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-bg-deep/50 px-4 py-3">
+    <div
+      className={cn(
+        "flex items-center gap-3 rounded-lg border border-border/50 bg-bg-deep/50 px-4 py-3 transition-all",
+        quest.done && "opacity-50"
+      )}
+    >
+      <button onClick={() => onToggle(quest.id)} className="shrink-0">
+        {quest.done ? (
+          <CheckCircle2 className="h-5 w-5 text-xp" />
+        ) : (
+          <Circle className="h-5 w-5 text-text-dim/40 transition-colors hover:text-accent" />
+        )}
+      </button>
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-text-bright">{title}</span>
-          <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${priorityColors[priority]}`}>
-            {priority === "boss" ? "BOSS" : priority}
+          <span className={cn("text-sm text-text-bright", quest.done && "line-through")}>{quest.title}</span>
+          <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${priorityColors[quest.priority]}`}>
+            {priorityLabels[quest.priority]}
           </span>
         </div>
         <div className="mt-1.5 flex items-center gap-3">
-          <span className="text-[10px] text-text-dim">{project}</span>
-          <span className="text-[10px] text-xp">+{xp} XP</span>
+          <span className="text-[10px] text-text-dim">{quest.project}</span>
+          <span className="text-[10px] text-xp">+{quest.xp} XP</span>
           <div className="h-1 w-24 rounded-full bg-border">
             <div
-              className="h-full rounded-full bg-accent"
-              style={{ width: `${progress}%` }}
+              className="h-full rounded-full bg-accent transition-all"
+              style={{ width: `${quest.progress}%` }}
             />
           </div>
-          <span className="text-[10px] text-text-dim">{progress}%</span>
+          <span className="text-[10px] text-text-dim">{quest.progress}%</span>
         </div>
       </div>
     </div>
   );
 }
 
-function LogEntry({
-  time,
-  text,
-  type,
-}: {
-  time: string;
-  text: string;
-  type: "story" | "achievement" | "gold" | "xp";
-}) {
-  const colors = {
+function LogEntry({ entry }: { entry: LogItem }) {
+  const colors: Record<string, string> = {
     story: "border-l-accent",
     achievement: "border-l-xp",
     gold: "border-l-gold",
     xp: "border-l-mana",
+    log: "border-l-text-dim",
+  };
+  const icons: Record<string, string> = {
+    story: "📖",
+    achievement: "🏆",
+    gold: "💰",
+    xp: "✨",
+    log: "📝",
   };
 
   return (
-    <div className={`border-l-2 ${colors[type]} pl-3`}>
-      <p className="text-xs text-text">{text}</p>
-      <p className="mt-0.5 text-[10px] text-text-dim">{time}</p>
+    <div className={`border-l-2 ${colors[entry.type]} pl-3`}>
+      <p className="text-xs text-text">
+        <span className="mr-1">{icons[entry.type]}</span>
+        {entry.text}
+      </p>
+      <p className="mt-0.5 text-[10px] text-text-dim">{entry.time}</p>
     </div>
   );
 }

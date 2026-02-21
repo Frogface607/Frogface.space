@@ -14,34 +14,34 @@ import {
 } from "lucide-react";
 
 const CORE_STATS = [
-  { name: "Vision", value: 92, icon: Eye, color: "text-accent", bg: "bg-accent" },
-  { name: "Architecture", value: 88, icon: Brain, color: "text-mana", bg: "bg-mana" },
-  { name: "Voice", value: 85, icon: Mic, color: "text-gold", bg: "bg-gold" },
-  { name: "Creation", value: 90, icon: Palette, color: "text-xp", bg: "bg-xp" },
-  { name: "Code", value: 65, icon: Code, color: "text-mana-dim", bg: "bg-mana-dim" },
-  { name: "Sales", value: 45, icon: TrendingUp, color: "text-hp", bg: "bg-hp" },
+  { name: "Видение", value: 92, icon: Eye, color: "text-accent", bg: "bg-accent" },
+  { name: "Архитектура", value: 88, icon: Brain, color: "text-mana", bg: "bg-mana" },
+  { name: "Голос", value: 85, icon: Mic, color: "text-gold", bg: "bg-gold" },
+  { name: "Созидание", value: 90, icon: Palette, color: "text-xp", bg: "bg-xp" },
+  { name: "Код", value: 65, icon: Code, color: "text-mana-dim", bg: "bg-mana-dim" },
+  { name: "Продажи", value: 45, icon: TrendingUp, color: "text-hp", bg: "bg-hp" },
 ];
 
 const SKILLS = [
-  { name: "AI Architecture", level: 7, xp: 2847, maxXp: 5000 },
-  { name: "Product Design", level: 6, xp: 3200, maxXp: 4000 },
-  { name: "Music Production", level: 8, xp: 7500, maxXp: 8000 },
-  { name: "Brand Building", level: 5, xp: 2100, maxXp: 3500 },
-  { name: "Content Strategy", level: 4, xp: 1800, maxXp: 3000 },
-  { name: "Sales & Marketing", level: 3, xp: 900, maxXp: 2500 },
-  { name: "Frontend Dev", level: 4, xp: 1600, maxXp: 3000 },
-  { name: "System Thinking", level: 7, xp: 4200, maxXp: 5000 },
+  { name: "AI-архитектура", level: 7, xp: 2847, maxXp: 5000 },
+  { name: "Продуктовый дизайн", level: 6, xp: 3200, maxXp: 4000 },
+  { name: "Музыка", level: 8, xp: 7500, maxXp: 8000 },
+  { name: "Бренд-билдинг", level: 5, xp: 2100, maxXp: 3500 },
+  { name: "Контент-стратегия", level: 4, xp: 1800, maxXp: 3000 },
+  { name: "Продажи", level: 3, xp: 900, maxXp: 2500 },
+  { name: "Фронтенд", level: 4, xp: 1600, maxXp: 3000 },
+  { name: "Системное мышление", level: 7, xp: 4200, maxXp: 5000 },
 ];
 
 const ACHIEVEMENTS = [
-  { name: "First Blood", desc: "First paying user", icon: "💰", unlocked: true },
-  { name: "Architect", desc: "Built complete AI agent system", icon: "🏗️", unlocked: true },
-  { name: "Voice of Reason", desc: "100 voice messages processed", icon: "🎙️", unlocked: true },
-  { name: "Solo Preneur", desc: "Launched product without team", icon: "🐺", unlocked: true },
-  { name: "Gold Rush", desc: "Reach 500K MRR", icon: "🏆", unlocked: false },
-  { name: "Game Master", desc: "Complete Chapter 1", icon: "🎮", unlocked: false },
-  { name: "Freedom", desc: "3 months passive income", icon: "🌊", unlocked: false },
-  { name: "World Walker", desc: "Work from 5 countries", icon: "✈️", unlocked: false },
+  { name: "Первая кровь", desc: "Первый платящий пользователь", icon: "💰", unlocked: true },
+  { name: "Архитектор", desc: "Построил полную AI-агентную систему", icon: "🏗️", unlocked: true },
+  { name: "Голос разума", desc: "100 голосовых обработано", icon: "🎙️", unlocked: true },
+  { name: "Соло-пренёр", desc: "Запустил продукт без команды", icon: "🐺", unlocked: true },
+  { name: "Золотая лихорадка", desc: "Достичь 500K MRR", icon: "🏆", unlocked: false },
+  { name: "Гейм-мастер", desc: "Завершить Главу 1", icon: "🎮", unlocked: false },
+  { name: "Свобода", desc: "3 месяца пассивного дохода", icon: "🌊", unlocked: false },
+  { name: "Странник", desc: "Работать из 5 стран", icon: "✈️", unlocked: false },
 ];
 
 export default function PlayerPage() {
@@ -54,12 +54,12 @@ export default function PlayerPage() {
             <Shield className="h-12 w-12 text-white" />
           </div>
           <div className="absolute -bottom-1 -right-1 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-bg-deep">
-            Lv.7
+            Ур.7
           </div>
         </div>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-text-bright">Sergey Orlov</h1>
-          <p className="text-sm text-accent">The Architect · Solo Creator · System Builder</p>
+          <p className="text-sm text-accent">Архитектор · Соло-создатель · Строитель систем</p>
           <p className="mt-2 text-xs text-text-dim italic">
             &quot;Я не хочу спасать. Я не хочу тушить. Я хочу строить.&quot;
           </p>
@@ -76,7 +76,7 @@ export default function PlayerPage() {
         <div className="w-56 rounded-lg border border-accent/20 bg-accent/5 p-4">
           <h3 className="flex items-center gap-1.5 text-xs font-semibold text-accent">
             <Sparkles className="h-3 w-3" />
-            Credo
+            Кредо
           </h3>
           <div className="mt-2 space-y-1">
             <p className="text-xs text-text">🗡️ Свобода</p>
@@ -91,7 +91,7 @@ export default function PlayerPage() {
         <div className="col-span-1 rounded-xl border border-border bg-bg-card p-5">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-bright">
             <Flame className="h-4 w-4 text-hp" />
-            Core Stats
+            Основные статы
           </h2>
           <div className="space-y-3">
             {CORE_STATS.map((stat) => (
@@ -114,14 +114,14 @@ export default function PlayerPage() {
         <div className="col-span-1 rounded-xl border border-border bg-bg-card p-5">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-bright">
             <Star className="h-4 w-4 text-gold" />
-            Skills
+            Навыки
           </h2>
           <div className="space-y-2.5">
             {SKILLS.map((skill) => (
               <div key={skill.name}>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-text">{skill.name}</span>
-                  <span className="text-[10px] text-accent">Lv.{skill.level}</span>
+                  <span className="text-[10px] text-accent">Ур.{skill.level}</span>
                 </div>
                 <div className="mt-1 h-1.5 rounded-full bg-bg-deep">
                   <div
@@ -141,7 +141,7 @@ export default function PlayerPage() {
         <div className="col-span-1 rounded-xl border border-border bg-bg-card p-5">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-bright">
             <Trophy className="h-4 w-4 text-gold" />
-            Achievements
+            Достижения
           </h2>
           <div className="space-y-2">
             {ACHIEVEMENTS.map((ach) => (
@@ -170,13 +170,13 @@ export default function PlayerPage() {
       <div className="rounded-xl border border-border bg-bg-card p-5">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-bright">
           <Music className="h-4 w-4 text-mana" />
-          Playstyle
+          Стиль игры
         </h2>
         <div className="grid grid-cols-4 gap-4">
-          <PlaystyleTag label="Architect" desc="Видит систему целиком" active />
-          <PlaystyleTag label="Solo Preneur" desc="AI вместо команды" active />
-          <PlaystyleTag label="Voice-First" desc="Думает голосом в движении" active />
-          <PlaystyleTag label="Sprint Player" desc="30-day chapters, not marathons" active />
+          <PlaystyleTag label="Архитектор" desc="Видит систему целиком" active />
+          <PlaystyleTag label="Соло-пренёр" desc="AI вместо команды" active />
+          <PlaystyleTag label="Голос" desc="Думает голосом в движении" active />
+          <PlaystyleTag label="Спринтер" desc="Главы по 30 дней, не марафоны" active />
         </div>
       </div>
     </div>

@@ -20,25 +20,25 @@ const PROJECTS = [
     color: "from-blue-500 to-cyan-400",
     borderColor: "border-blue-500/30",
     status: "launching",
-    phase: "Launch Sprint",
+    phase: "Спринт запуска",
     mrr: "0.5K",
     mrrTarget: "100K",
     users: 1,
     usersTarget: 200,
     progress: 85,
     quests: [
-      { text: "First 10 paying users", done: false, priority: "boss" },
-      { text: "Content strategy live", done: true },
-      { text: "Telegram channel active", done: true },
-      { text: "Payment system working", done: true },
-      { text: "Promo code system", done: true },
-      { text: "SEO + landing optimization", done: false },
-      { text: "Chrome extension submission", done: false },
+      { text: "Первые 10 платящих", done: false, priority: "boss" },
+      { text: "Контент-стратегия запущена", done: true },
+      { text: "Телеграм-канал активен", done: true },
+      { text: "Платёжная система работает", done: true },
+      { text: "Промокоды", done: true },
+      { text: "SEO + оптимизация лендинга", done: false },
+      { text: "Chrome-расширение на публикацию", done: false },
     ],
     metrics: [
       { label: "MRR", value: "490₽", trend: "+100%" },
-      { label: "Users", value: "1", trend: "first!" },
-      { label: "AI Cost/Response", value: "~3₽", trend: "optimal" },
+      { label: "Юзеры", value: "1", trend: "первый!" },
+      { label: "AI за ответ", value: "~3₽", trend: "оптимально" },
     ],
   },
   {
@@ -49,48 +49,48 @@ const PROJECTS = [
     color: "from-amber-500 to-orange-400",
     borderColor: "border-amber-500/30",
     status: "active",
-    phase: "Autonomy Quest",
+    phase: "Квест автономии",
     mrr: "150K",
     mrrTarget: "200K",
     users: null,
     usersTarget: null,
     progress: 60,
     quests: [
-      { text: "Website launch — close the gestalt", done: false, priority: "critical" },
-      { text: "Automated announcements", done: false },
-      { text: "Rebrand finalized", done: true },
-      { text: "Menu automation", done: false },
-      { text: "Social media on autopilot", done: false },
+      { text: "Запуск сайта — закрыть гештальт", done: false, priority: "critical" },
+      { text: "Автоматические анонсы", done: false },
+      { text: "Ребрендинг завершён", done: true },
+      { text: "Автоматизация меню", done: false },
+      { text: "Соцсети на автопилоте", done: false },
     ],
     metrics: [
-      { label: "Monthly Rev", value: "~150K₽", trend: "stable" },
-      { label: "Manual Work", value: "high", trend: "reducing" },
-      { label: "Automation", value: "30%", trend: "growing" },
+      { label: "Выручка/мес", value: "~150K₽", trend: "стабильно" },
+      { label: "Ручная работа", value: "много", trend: "снижаем" },
+      { label: "Автоматизация", value: "30%", trend: "растёт" },
     ],
   },
   {
     id: "receptor",
     name: "Receptor",
-    tagline: "AI-powered platform. Pre-production analysis.",
+    tagline: "AI-платформа. Анализ пре-продакшна.",
     icon: Cpu,
     color: "from-purple-500 to-pink-400",
     borderColor: "border-purple-500/30",
     status: "research",
-    phase: "Research & Analysis",
+    phase: "Исследование",
     mrr: "0",
     mrrTarget: "TBD",
     users: null,
     usersTarget: null,
     progress: 30,
     quests: [
-      { text: "Market analysis complete", done: true },
-      { text: "Technical feasibility study", done: false },
-      { text: "MVP scope definition", done: false },
-      { text: "First prototype", done: false },
+      { text: "Анализ рынка завершён", done: true },
+      { text: "Техническая оценка", done: false },
+      { text: "Скоуп MVP", done: false },
+      { text: "Первый прототип", done: false },
     ],
     metrics: [
-      { label: "Phase", value: "Research", trend: "active" },
-      { label: "Blockers", value: "2", trend: "resolving" },
+      { label: "Фаза", value: "Ресёрч", trend: "активно" },
+      { label: "Блокеры", value: "2", trend: "решаем" },
     ],
   },
   {
@@ -101,21 +101,21 @@ const PROJECTS = [
     color: "from-green-500 to-emerald-400",
     borderColor: "border-green-500/30",
     status: "building",
-    phase: "Infrastructure Build",
+    phase: "Стройка базы",
     mrr: "0",
     mrrTarget: "B2B",
     users: null,
     usersTarget: null,
     progress: 15,
     quests: [
-      { text: "Life OS dashboard (this!)", done: false, priority: "critical" },
-      { text: "Agent office setup", done: false },
-      { text: "Portfolio showcase", done: false },
-      { text: "B2B case studies", done: false },
+      { text: "Дашборд Life OS (это!)", done: false, priority: "critical" },
+      { text: "Настройка офиса агентов", done: false },
+      { text: "Витрина портфолио", done: false },
+      { text: "B2B кейсы", done: false },
     ],
     metrics: [
-      { label: "Agents", value: "12+", trend: "configured" },
-      { label: "Tools", value: "8", trend: "active" },
+      { label: "Агенты", value: "12+", trend: "настроены" },
+      { label: "Инструменты", value: "8", trend: "активно" },
     ],
   },
 ];
@@ -132,14 +132,14 @@ export default function ProjectsPage() {
     <div className="animate-fade-in space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-text-bright">Mission Board</h1>
+          <h1 className="text-2xl font-bold text-text-bright">Доска миссий</h1>
           <p className="mt-1 text-sm text-text-dim">
-            Projects are bosses. Tasks are quests. Ship or die.
+            Проекты — боссы. Задачи — квесты. Делай или умри.
           </p>
         </div>
         <div className="flex gap-3">
-          <MiniStat icon={<DollarSign className="h-4 w-4 text-gold" />} label="Total MRR" value="~178K ₽" />
-          <MiniStat icon={<TrendingUp className="h-4 w-4 text-xp" />} label="Target" value="500K ₽" />
+          <MiniStat icon={<DollarSign className="h-4 w-4 text-gold" />} label="Общий MRR" value="~178K ₽" />
+          <MiniStat icon={<TrendingUp className="h-4 w-4 text-xp" />} label="Цель" value="500K ₽" />
         </div>
       </div>
 
@@ -169,7 +169,7 @@ export default function ProjectsPage() {
             {/* Progress bar */}
             <div className="mt-4">
               <div className="flex items-center justify-between text-[10px] text-text-dim">
-                <span>Overall progress</span>
+                <span>Общий прогресс</span>
                 <span>{p.progress}%</span>
               </div>
               <div className="mt-1 h-2 rounded-full bg-bg-deep">

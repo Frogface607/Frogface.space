@@ -13,11 +13,11 @@ import {
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/", label: "HQ", icon: Home, description: "Headquarters" },
-  { href: "/player", label: "Player", icon: Gamepad2, description: "RPG Stats & Quests" },
-  { href: "/projects", label: "Projects", icon: FolderKanban, description: "Mission Board" },
-  { href: "/studio", label: "Studio", icon: Building2, description: "Agent Office" },
-  { href: "/command", label: "Command", icon: Terminal, description: "Talk to Moltbot" },
+  { href: "/", label: "Штаб", icon: Home, description: "Главный экран" },
+  { href: "/player", label: "Игрок", icon: Gamepad2, description: "Статы и квесты" },
+  { href: "/projects", label: "Проекты", icon: FolderKanban, description: "Доска миссий" },
+  { href: "/studio", label: "Студия", icon: Building2, description: "Офис агентов" },
+  { href: "/command", label: "Команды", icon: Terminal, description: "Чат с Moltbot" },
 ];
 
 export function Sidebar() {
@@ -75,8 +75,8 @@ export function Sidebar() {
         <div className="mb-2 flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-accent to-mana" />
           <div>
-            <p className="text-xs font-semibold text-text-bright">Sergey</p>
-            <p className="text-[10px] text-text-dim">Lv. 7 Architect</p>
+            <p className="text-xs font-semibold text-text-bright">Сергей</p>
+            <p className="text-[10px] text-text-dim">Ур. 7 Архитектор</p>
           </div>
         </div>
         <div className="space-y-1.5">
