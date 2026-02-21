@@ -1,4 +1,4 @@
-fix: make auth optional — site works without env vars
+fix: remove duplicate root page.tsx that was hiding sidebar
 
-Auth was blocking all access because ADMIN_PASSWORD and SESSION_SECRET
-were not set on Vercel. Now middleware skips auth when vars are missing.
+src/app/page.tsx was shadowing src/app/(dashboard)/page.tsx,
+causing the page to render outside the dashboard layout (no Sidebar).
