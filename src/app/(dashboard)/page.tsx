@@ -94,7 +94,7 @@ export default function HQPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         <StatCard
           icon={<TrendingUp className="h-5 w-5 text-gold" />}
           label="Золото (MRR)"
@@ -125,8 +125,8 @@ export default function HQPage() {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 rounded-xl border border-border bg-bg-card p-5">
+      <div className="grid gap-4 lg:grid-cols-3 lg:gap-6">
+        <div className="lg:col-span-2 rounded-xl border border-border bg-bg-card p-4 lg:p-5">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-bright">
             <Target className="h-4 w-4 text-accent" />
             Активные квесты
@@ -138,7 +138,7 @@ export default function HQPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-bg-card p-5">
+        <div className="rounded-xl border border-border bg-bg-card p-4 lg:p-5">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-bright">
             <Trophy className="h-4 w-4 text-gold" />
             Летопись
@@ -170,8 +170,8 @@ export default function HQPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-bg-card p-5">
-        <div className="flex items-center justify-between">
+      <div className="rounded-xl border border-border bg-bg-card p-4 lg:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="flex items-center gap-2 text-sm font-semibold text-text-bright">
               <Clock className="h-4 w-4 text-mana" />
@@ -181,7 +181,7 @@ export default function HQPage() {
               30-дневный спринт · Построить базу, запустить продукты, достичь 500K Gold
             </p>
           </div>
-          <div className="text-right">
+          <div className="sm:text-right">
             <p className="text-2xl font-bold text-accent">День 1</p>
             <p className="text-[10px] text-text-dim">осталось 29 дней</p>
           </div>
@@ -230,7 +230,7 @@ function QuestRow({ quest, onToggle }: { quest: Quest; onToggle: (id: string) =>
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-lg border border-border/50 bg-bg-deep/50 px-4 py-3 transition-all",
+        "flex items-center gap-2 rounded-lg border border-border/50 bg-bg-deep/50 px-3 py-2.5 lg:gap-3 lg:px-4 lg:py-3 transition-all",
         quest.done && "opacity-50"
       )}
     >
@@ -242,22 +242,22 @@ function QuestRow({ quest, onToggle }: { quest: Quest; onToggle: (id: string) =>
         )}
       </button>
       <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <span className={cn("text-sm text-text-bright", quest.done && "line-through")}>{quest.title}</span>
+        <div className="flex flex-wrap items-center gap-1.5 lg:gap-2">
+          <span className={cn("text-xs lg:text-sm text-text-bright", quest.done && "line-through")}>{quest.title}</span>
           <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${priorityColors[quest.priority]}`}>
             {priorityLabels[quest.priority]}
           </span>
         </div>
-        <div className="mt-1.5 flex items-center gap-3">
+        <div className="mt-1 flex flex-wrap items-center gap-2 lg:mt-1.5 lg:gap-3">
           <span className="text-[10px] text-text-dim">{quest.project}</span>
           <span className="text-[10px] text-xp">+{quest.xp} XP</span>
-          <div className="h-1 w-24 rounded-full bg-border">
+          <div className="hidden h-1 w-24 rounded-full bg-border sm:block">
             <div
               className="h-full rounded-full bg-accent transition-all"
               style={{ width: `${quest.progress}%` }}
             />
           </div>
-          <span className="text-[10px] text-text-dim">{quest.progress}%</span>
+          <span className="hidden text-[10px] text-text-dim sm:inline">{quest.progress}%</span>
         </div>
       </div>
     </div>

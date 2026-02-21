@@ -217,7 +217,7 @@ export default function QuestsPage() {
               {/* Chain header */}
               <button
                 onClick={() => toggleChain(chain.id)}
-                className="flex w-full items-center gap-4 p-4 text-left"
+                className="flex w-full items-center gap-3 p-3 text-left lg:gap-4 lg:p-4"
               >
                 <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br", chain.color)}>
                   {chain.icon}

@@ -144,7 +144,7 @@ export default function ProjectsPage() {
       </div>
 
       {/* Project cards */}
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:gap-5">
         {PROJECTS.map((p) => (
           <div
             key={p.id}
@@ -181,9 +181,9 @@ export default function ProjectsPage() {
             </div>
 
             {/* Metrics */}
-            <div className="mt-3 flex gap-3">
+            <div className="mt-3 flex flex-wrap gap-2 lg:gap-3">
               {p.metrics.map((m) => (
-                <div key={m.label} className="rounded-md bg-bg-deep px-2.5 py-1.5">
+                <div key={m.label} className="rounded-md bg-bg-deep px-2 py-1.5 lg:px-2.5">
                   <p className="text-[10px] text-text-dim">{m.label}</p>
                   <p className="text-xs font-medium text-text-bright">{m.value}</p>
                   <p className="text-[9px] text-xp">{m.trend}</p>

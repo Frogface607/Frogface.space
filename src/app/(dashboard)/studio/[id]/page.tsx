@@ -97,22 +97,61 @@ function AgentDashboard({ agent: initialAgent }: { agent: AgentData }) {
     );
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     const text = chatInput.trim();
-    if (!text) return;
+    if (!text || typing) return;
 
     const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", text, time: now() };
     setMessages((prev) => [...prev, userMsg]);
     setChatInput("");
     setTyping(true);
 
-    setTimeout(() => {
-      const response = simulateResponse(initialAgent, text);
-      const agentMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: "agent", text: response, time: now() };
-      setMessages((prev) => [...prev, agentMsg]);
-      setTyping(false);
+    const agentMsgId = (Date.now() + 1).toString();
+
+    try {
+      const history = [...messages, userMsg].map((m) => ({
+        role: m.role === "user" ? ("user" as const) : ("assistant" as const),
+        content: m.text,
+      }));
+
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "system", content: initialAgent.systemPrompt }, ...history],
+          model: initialAgent.model,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`API error ${res.status}`);
+
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let full = "";
+
+      setMessages((prev) => [...prev, { id: agentMsgId, role: "agent", text: "", time: now() }]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        full += decoder.decode(value, { stream: true });
+        const snapshot = full;
+        setMessages((prev) =>
+          prev.map((m) => (m.id === agentMsgId ? { ...m, text: snapshot } : m))
+        );
+      }
+
       addLog(`Ответил на: "${text.slice(0, 30)}..."`);
-    }, 1200 + Math.random() * 800);
+    } catch (err) {
+      const fallback = simulateResponse(initialAgent, text);
+      setMessages((prev) => {
+        const without = prev.filter((m) => m.id !== agentMsgId);
+        return [...without, { id: agentMsgId, role: "agent" as const, text: `⚡ ${fallback}`, time: now() }];
+      });
+      addLog(`Оффлайн-ответ (API недоступен)`);
+    } finally {
+      setTyping(false);
+    }
   };
 
   const pendingTasks = tasks.filter((t) => !t.done).length;
@@ -168,9 +207,8 @@ function AgentDashboard({ agent: initialAgent }: { agent: AgentData }) {
       <p className="text-xs leading-relaxed text-text-dim">{initialAgent.desc}</p>
 
       {/* Main layout: Chat + Sidebar */}
-      <div className="grid grid-cols-3 gap-4" style={{ height: "calc(100vh - 14rem)" }}>
-        {/* Chat area — 2 cols */}
-        <div className="col-span-2 flex flex-col rounded-xl border border-border bg-bg-card">
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-3" style={{ minHeight: "min(60vh, 500px)" }}>
+        <div className="flex flex-col rounded-xl border border-border bg-bg-card lg:col-span-2" style={{ minHeight: "350px" }}>
           {/* Chat header */}
           <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
             <Sparkles className="h-4 w-4 text-accent" />

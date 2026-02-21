@@ -48,37 +48,39 @@ export default function PlayerPage() {
   return (
     <div className="animate-fade-in space-y-6">
       {/* Character header */}
-      <div className="flex items-start gap-6 rounded-xl border border-border bg-bg-card p-6">
-        <div className="relative">
-          <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-accent via-mana to-xp">
-            <Shield className="h-12 w-12 text-white" />
+      <div className="flex flex-col gap-4 rounded-xl border border-border bg-bg-card p-4 sm:flex-row sm:items-start sm:gap-6 lg:p-6">
+        <div className="flex items-center gap-4 sm:block">
+          <div className="relative">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-accent via-mana to-xp sm:h-24 sm:w-24">
+              <Shield className="h-8 w-8 text-white sm:h-12 sm:w-12" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-bg-deep">
+              Ур.7
+            </div>
           </div>
-          <div className="absolute -bottom-1 -right-1 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-bg-deep">
-            Ур.7
+          <div className="sm:hidden">
+            <h1 className="text-lg font-bold text-text-bright">Sergey Orlov</h1>
+            <p className="text-xs text-accent">Архитектор · Соло-создатель</p>
           </div>
         </div>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-text-bright">Sergey Orlov</h1>
-          <p className="text-sm text-accent">Архитектор · Соло-создатель · Строитель систем</p>
-          <p className="mt-2 text-xs text-text-dim italic">
+          <h1 className="hidden text-2xl font-bold text-text-bright sm:block">Sergey Orlov</h1>
+          <p className="hidden text-sm text-accent sm:block">Архитектор · Соло-создатель · Строитель систем</p>
+          <p className="text-xs text-text-dim italic">
             &quot;Я не хочу спасать. Я не хочу тушить. Я хочу строить.&quot;
           </p>
-
-          {/* Resource bars */}
-          <div className="mt-4 grid grid-cols-3 gap-4">
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:mt-4 sm:grid-cols-3 sm:gap-4">
             <ResourceBar label="Gold" value={178} max={500} suffix="K ₽" color="bg-gold" icon="💰" />
             <ResourceBar label="Mana" value={72} max={100} color="bg-mana" icon="⚡" />
             <ResourceBar label="XP" value={2847} max={5000} color="bg-xp" icon="✨" />
           </div>
         </div>
-
-        {/* Credo */}
-        <div className="w-56 rounded-lg border border-accent/20 bg-accent/5 p-4">
+        <div className="rounded-lg border border-accent/20 bg-accent/5 p-3 sm:w-56 sm:p-4">
           <h3 className="flex items-center gap-1.5 text-xs font-semibold text-accent">
             <Sparkles className="h-3 w-3" />
             Кредо
           </h3>
-          <div className="mt-2 space-y-1">
+          <div className="mt-2 flex gap-3 sm:block sm:space-y-1">
             <p className="text-xs text-text">🗡️ Свобода</p>
             <p className="text-xs text-text">🛡️ Уверенность</p>
             <p className="text-xs text-text">👑 Уважение</p>
@@ -86,9 +88,8 @@ export default function PlayerPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        {/* Core stats */}
-        <div className="col-span-1 rounded-xl border border-border bg-bg-card p-5">
+      <div className="grid gap-4 lg:grid-cols-3 lg:gap-6">
+        <div className="rounded-xl border border-border bg-bg-card p-4 lg:p-5">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-bright">
             <Flame className="h-4 w-4 text-hp" />
             Основные статы
@@ -111,7 +112,7 @@ export default function PlayerPage() {
         </div>
 
         {/* Skills */}
-        <div className="col-span-1 rounded-xl border border-border bg-bg-card p-5">
+        <div className="rounded-xl border border-border bg-bg-card p-4 lg:p-5">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-bright">
             <Star className="h-4 w-4 text-gold" />
             Навыки
@@ -138,7 +139,7 @@ export default function PlayerPage() {
         </div>
 
         {/* Achievements */}
-        <div className="col-span-1 rounded-xl border border-border bg-bg-card p-5">
+        <div className="rounded-xl border border-border bg-bg-card p-4 lg:p-5">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-bright">
             <Trophy className="h-4 w-4 text-gold" />
             Достижения
@@ -167,12 +168,12 @@ export default function PlayerPage() {
       </div>
 
       {/* Playstyle */}
-      <div className="rounded-xl border border-border bg-bg-card p-5">
+      <div className="rounded-xl border border-border bg-bg-card p-4 lg:p-5">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-bright">
           <Music className="h-4 w-4 text-mana" />
           Стиль игры
         </h2>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
           <PlaystyleTag label="Архитектор" desc="Видит систему целиком" active />
           <PlaystyleTag label="Соло-пренёр" desc="AI вместо команды" active />
           <PlaystyleTag label="Голос" desc="Думает голосом в движении" active />

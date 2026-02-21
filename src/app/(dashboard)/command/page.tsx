@@ -36,8 +36,8 @@ export default function CommandPage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = () => {
-    if (!input.trim()) return;
+  const sendMessage = async () => {
+    if (!input.trim() || isTyping) return;
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -50,21 +50,60 @@ export default function CommandPage() {
     setInput("");
     setIsTyping(true);
 
-    // Simulate response (will be replaced with real OpenClaw WebSocket)
-    setTimeout(() => {
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: getSimulatedResponse(input),
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMsg]);
+    const botMsgId = (Date.now() + 1).toString();
+
+    const SYSTEM_PROMPT =
+      "Ты — Moltbot, операционный директор Frogface Studio. Координируешь работу всех агентов, управляешь приоритетами, следишь за прогрессом проектов. Стиль общения: дружелюбный, лаконичный, с лёгким RPG-нарративом. Обращайся к пользователю 'Архитектор'. Отвечай на русском.";
+
+    try {
+      const history = messages
+        .filter((m) => m.role !== "system")
+        .map((m) => ({
+          role: m.role === "user" ? ("user" as const) : ("assistant" as const),
+          content: m.content,
+        }));
+
+      history.push({ role: "user", content: input });
+
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...history],
+          model: "Claude Sonnet 4",
+        }),
+      });
+
+      if (!res.ok) throw new Error(`API error ${res.status}`);
+
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let full = "";
+
+      setMessages((prev) => [...prev, { id: botMsgId, role: "assistant", content: "", timestamp: new Date() }]);
       setIsTyping(false);
-    }, 1500);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        full += decoder.decode(value, { stream: true });
+        const snapshot = full;
+        setMessages((prev) =>
+          prev.map((m) => (m.id === botMsgId ? { ...m, content: snapshot } : m))
+        );
+      }
+    } catch {
+      const fallback = getSimulatedResponse(input);
+      setMessages((prev) => [
+        ...prev,
+        { id: botMsgId, role: "assistant", content: `⚡ ${fallback}`, timestamp: new Date() },
+      ]);
+      setIsTyping(false);
+    }
   };
 
   return (
-    <div className="animate-fade-in flex h-[calc(100vh-3rem)] flex-col">
+    <div className="animate-fade-in flex h-[calc(100vh-5rem)] flex-col lg:h-[calc(100vh-3rem)]">
       {/* Header */}
       <div className="flex items-center justify-between rounded-t-xl border border-border bg-bg-card px-5 py-3">
         <div className="flex items-center gap-3">

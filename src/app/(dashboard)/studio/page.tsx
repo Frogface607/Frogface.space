@@ -35,7 +35,7 @@ export default function StudioPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:gap-4">
         {AGENTS.map((agent) => {
           const st = STATUS_CONFIG[agent.status];
           const pendingTasks = agent.tasks.filter((t) => !t.done).length;
