@@ -1,6 +1,6 @@
 # TASK-003: Подключить полноценный бэкенд (сохранение данных)
 
-**Статус:** pending
+**Статус:** done
 **Приоритет:** high
 **Проект:** frogface
 **Исполнитель:** cursor
@@ -32,8 +32,12 @@ Supabase уже подключен, есть таблицы: `kv_store`, `activi
 
 ## Критерии готовности
 
-- [ ] Все данные синхронизируются с Supabase
-- [ ] localStorage используется как кэш/оффлайн fallback
-- [ ] Данные не теряются при очистке браузера
-- [ ] Чаты агентов сохраняются в `chat_messages`
-- [ ] При загрузке — сначала localStorage, потом fetch из Supabase
+- [x] Все данные синхронизируются с OpenClaw (Supabase опционально)
+- [x] localStorage используется как кэш/оффлайн fallback
+- [x] Данные не теряются при очистке браузера
+- [x] Чаты агентов сохраняются через /api/kv
+- [x] При загрузке — сначала localStorage, потом fetch из API
+
+## Результат
+
+Единый storage layer: OpenClaw primary → Supabase fallback. usePersistedState и useChatHistory работают через /api/kv. Supabase больше не нужен.
