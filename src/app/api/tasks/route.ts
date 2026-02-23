@@ -1,8 +1,15 @@
 import { NextRequest } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { type CursorTask, generateTaskId } from "@/lib/tasks";
+import { type CursorTask, type TaskStatus, generateTaskId } from "@/lib/tasks";
 
 const KV_KEY = "cursor_tasks";
+
+const STATUS_EMOJI: Record<TaskStatus, string> = {
+  pending: "⏳",
+  in_progress: "⚡",
+  done: "✅",
+  cancelled: "❌",
+};
 
 function getSupabase(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -121,6 +128,64 @@ export async function POST(req: NextRequest) {
   return Response.json({ ok: true, task });
 }
 
+async function notifyMoltbot(sb: SB, task: CursorTask, newStatus: TaskStatus) {
+  const emoji = STATUS_EMOJI[newStatus];
+  const lines = [
+    `${emoji} Задача обновлена: **${task.title}**`,
+    `Статус: ${newStatus} | Проект: ${task.project} | ID: ${task.id}`,
+  ];
+  if (task.result) {
+    lines.push(`Результат: ${task.result}`);
+  }
+  const text = lines.join("\n");
+
+  await sb.from("chat_messages").insert(
+    { agent_id: "moltbot", role: "system", content: text } as never,
+  );
+
+  await sb.from("chat_messages").insert(
+    { agent_id: "command", role: "system", content: text } as never,
+  );
+}
+
+async function sendWebhook(task: CursorTask, newStatus: TaskStatus) {
+  const webhookUrl = process.env.TASK_WEBHOOK_URL;
+  if (!webhookUrl) return;
+
+  const emoji = STATUS_EMOJI[newStatus];
+  const payload: Record<string, unknown> = {
+    task_id: task.id,
+    title: task.title,
+    status: newStatus,
+    project: task.project,
+    result: task.result || null,
+  };
+
+  if (webhookUrl.includes("api.telegram.org")) {
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+    if (!chatId) return;
+    const text = [
+      `${emoji} *${task.title}*`,
+      `Статус: \`${newStatus}\``,
+      `Проект: ${task.project}`,
+      `ID: \`${task.id}\``,
+      task.result ? `\nРезультат: ${task.result}` : "",
+    ].filter(Boolean).join("\n");
+
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "Markdown" }),
+    }).catch(() => {});
+  } else {
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).catch(() => {});
+  }
+}
+
 export async function PATCH(req: NextRequest) {
   if (!checkAuth(req)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -150,7 +215,7 @@ export async function PATCH(req: NextRequest) {
     return Response.json({ error: "Task not found" }, { status: 404 });
   }
 
-  const updated = {
+  const updated: CursorTask = {
     ...tasks[idx],
     ...rest,
     ...(status && { status }),
@@ -161,10 +226,14 @@ export async function PATCH(req: NextRequest) {
   await saveTasks(sb, tasks);
 
   if (status) {
+    const emoji = STATUS_EMOJI[status as TaskStatus] || "📋";
     await sb.from("activity_log").insert(
-      { source: "tasks", type: "log", text: `Задача ${id}: ${tasks[idx].title} → ${status}` } as never,
+      { source: "tasks", type: "log", text: `${emoji} Задача ${id}: ${updated.title} → ${status}` } as never,
     );
+
+    await notifyMoltbot(sb, updated, status as TaskStatus);
+    sendWebhook(updated, status as TaskStatus);
   }
 
-  return Response.json({ ok: true, task: updated });
+  return Response.json({ ok: true, task: updated, notified: !!status });
 }

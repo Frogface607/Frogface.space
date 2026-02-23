@@ -123,6 +123,31 @@
         }
       }
     },
+    "/api/notify": {
+      "post": {
+        "operationId": "notifyMoltbot",
+        "summary": "Send a notification to Moltbot chat (from Cursor, bots, etc.)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                  "message": { "type": "string", "description": "Message text" },
+                  "from": { "type": "string", "description": "Sender name (default: cursor)" },
+                  "channel": { "type": "string", "description": "Chat channel: command, moltbot, etc." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Notification sent" }
+        }
+      }
+    },
     "/api/log": {
       "get": {
         "operationId": "getLog",
