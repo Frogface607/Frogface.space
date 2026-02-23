@@ -1,6 +1,6 @@
 # TASK-002: RPG-движок — квесты из потоков сознания
 
-**Статус:** pending
+**Статус:** done
 **Приоритет:** critical
 **Проект:** frogface
 **Исполнитель:** cursor
@@ -25,8 +25,12 @@
 
 ## Критерии готовности
 
-- [ ] Квесты хранятся в Supabase (не только localStorage)
-- [ ] API для CRUD квестов (create, read, update, delete)
-- [ ] Moltbot может создавать квесты через чат-команды
-- [ ] XP автоматически начисляется при завершении квеста
-- [ ] Прогресс цепочек пересчитывается динамически
+- [x] Квесты хранятся в Supabase (не только localStorage)
+- [x] API для CRUD квестов (create, read, update, delete)
+- [x] Moltbot может создавать квесты через чат-команды
+- [x] XP автоматически начисляется при завершении квеста
+- [x] Прогресс цепочек пересчитывается динамически
+
+## Результат
+
+/api/rpg с полным CRUD: create_quest, complete_quest, update_progress, add_achievement, morning_report. Автоматический level-up с экспоненциальной кривой XP. PlayerState в Supabase. Страница /player загружает живые данные.
