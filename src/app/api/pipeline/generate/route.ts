@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   type ContentPiece,
   type ContentBrand,
@@ -7,37 +6,15 @@ import {
   BRAND_CONFIG,
   generateContentId,
 } from "@/lib/pipeline";
+import { kvGet, kvSet, logAppend } from "@/lib/storage";
 
 const KV_KEY = "content_pipeline";
-
-function getSupabase(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
 
 function checkAuth(req: NextRequest): boolean {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   const secret = process.env.API_SECRET;
   if (!secret) return true;
   return token === secret;
-}
-
-async function getPipeline(sb: SupabaseClient): Promise<ContentPiece[]> {
-  const { data } = await sb
-    .from("kv_store")
-    .select("value")
-    .eq("key", KV_KEY)
-    .maybeSingle();
-  if (!data) return [];
-  return (data as { value: ContentPiece[] }).value || [];
-}
-
-async function savePipeline(sb: SupabaseClient, items: ContentPiece[]) {
-  await sb.from("kv_store").upsert(
-    { key: KV_KEY, value: items as unknown, updated_at: new Date().toISOString() } as never,
-  );
 }
 
 function buildPrompt(brand: ContentBrand, format: ContentFormat, topic: string): string {
@@ -69,12 +46,9 @@ function buildPrompt(brand: ContentBrand, format: ContentFormat, topic: string):
 }
 
 async function generateOne(
-  brand: ContentBrand,
-  format: ContentFormat,
-  topic: string,
+  brand: ContentBrand, format: ContentFormat, topic: string,
 ): Promise<ContentPiece | null> {
   const prompt = buildPrompt(brand, format, topic);
-
   const openclawUrl = process.env.OPENCLAW_URL;
   const openclawToken = process.env.OPENCLAW_GATEWAY_TOKEN;
   const openrouterKey = process.env.OPENROUTER_API_KEY;
@@ -85,10 +59,7 @@ async function generateOne(
     try {
       const res = await fetch(`${openclawUrl}/v1/chat/completions`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${openclawToken}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${openclawToken}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "anthropic/claude-sonnet-4",
           messages: [{ role: "user", content: prompt }],
@@ -99,9 +70,7 @@ async function generateOne(
         const data = await res.json();
         responseText = data.choices?.[0]?.message?.content || "";
       }
-    } catch {
-      // fall through to OpenRouter
-    }
+    } catch { /* fall through */ }
   }
 
   if (!responseText && openrouterKey) {
@@ -124,9 +93,7 @@ async function generateOne(
         const data = await res.json();
         responseText = data.choices?.[0]?.message?.content || "";
       }
-    } catch {
-      // no backend available
-    }
+    } catch { /* no backend */ }
   }
 
   if (!responseText) return null;
@@ -141,9 +108,7 @@ async function generateOne(
 
   return {
     id: generateContentId(),
-    brand,
-    format,
-    topic,
+    brand, format, topic,
     text: parsed.text || responseText,
     image_prompt: parsed.image_prompt,
     hashtags: parsed.hashtags,
@@ -153,27 +118,15 @@ async function generateOne(
 }
 
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!checkAuth(req)) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   let body;
-  try {
-    body = await req.json();
-  } catch {
+  try { body = await req.json(); } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const {
-    brand = "myreply" as ContentBrand,
-    format = "tg_post" as ContentFormat,
-    topics,
-    count = 1,
-  } = body as {
-    brand?: ContentBrand;
-    format?: ContentFormat;
-    topics?: string[];
-    count?: number;
+  const { brand = "myreply", format = "tg_post", topics, count = 1 } = body as {
+    brand?: ContentBrand; format?: ContentFormat; topics?: string[]; count?: number;
   };
 
   const defaultTopics: Record<ContentBrand, string[]> = {
@@ -220,19 +173,12 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "No AI backend available" }, { status: 502 });
   }
 
-  const sb = getSupabase();
-  if (sb) {
-    const existing = await getPipeline(sb);
-    await savePipeline(sb, [...generated, ...existing]);
-
-    await sb.from("activity_log").insert(
-      {
-        source: "pipeline",
-        type: "log",
-        text: `Сгенерировано ${generated.length} постов (${BRAND_CONFIG[brand].name}, ${format})`,
-      } as never,
-    );
-  }
+  const existing = await kvGet<ContentPiece[]>(KV_KEY, []);
+  await kvSet(KV_KEY, [...generated, ...existing]);
+  await logAppend({
+    source: "pipeline", type: "log",
+    text: `Сгенерировано ${generated.length} постов (${BRAND_CONFIG[brand].name}, ${format})`,
+  });
 
   return Response.json({ ok: true, generated: generated.length, pieces: generated });
 }

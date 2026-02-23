@@ -1,14 +1,7 @@
 import { NextRequest } from "next/server";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { type ContentPiece } from "@/lib/pipeline";
 import { type CursorTask } from "@/lib/tasks";
-
-function getSupabase(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { kvGet, getStorageInfo } from "@/lib/storage";
 
 function checkAuth(req: NextRequest): boolean {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -17,26 +10,13 @@ function checkAuth(req: NextRequest): boolean {
   return token === secret;
 }
 
-async function getKV<T>(sb: SupabaseClient, key: string, fallback: T): Promise<T> {
-  const { data } = await sb.from("kv_store").select("value").eq("key", key).maybeSingle();
-  if (!data) return fallback;
-  return (data as { value: T }).value;
-}
-
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!checkAuth(req)) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const sb = getSupabase();
-  if (!sb) {
-    return Response.json({ error: "Supabase not configured" }, { status: 500 });
-  }
-
-  const player = await getKV(sb, "rpg_player", { level: 7, xp: 0, gold: 178, mana: 72 });
-  const quests = await getKV<{ done: boolean; priority: string; title: string; xp: number; completed?: string }[]>(sb, "rpg_quests", []);
-  const pipeline = await getKV<ContentPiece[]>(sb, "content_pipeline", []);
-  const tasks = await getKV<CursorTask[]>(sb, "cursor_tasks", []);
+  const player = await kvGet("rpg_player", { level: 7, xp: 0, gold: 178, mana: 72 });
+  const quests = await kvGet<{ done: boolean; priority: string; title: string; xp: number; completed?: string }[]>("rpg_quests", []);
+  const pipeline = await kvGet<ContentPiece[]>("content_pipeline", []);
+  const tasks = await kvGet<CursorTask[]>("cursor_tasks", []);
 
   const now = new Date();
   const todayStr = now.toISOString().split("T")[0];
@@ -45,15 +25,19 @@ export async function GET(req: NextRequest) {
   const activeQuests = quests.filter((q) => !q.done);
   const completedToday = quests.filter((q) => q.done && q.completed?.startsWith(todayStr));
   const completedYesterday = quests.filter((q) => q.done && q.completed?.startsWith(yesterdayStr));
-
   const pendingContent = pipeline.filter((c) => c.status === "pending");
   const approvedContent = pipeline.filter((c) => c.status === "approved");
-
   const pendingTasks = tasks.filter((t) => t.status === "pending");
   const doneTasks = tasks.filter((t) => t.status === "done");
 
-  const report = {
-    greeting: getGreeting(),
+  const h = now.getHours();
+  const greeting = h < 6 ? "Ночная смена, Архитектор." :
+    h < 12 ? "Доброе утро, Архитектор." :
+    h < 18 ? "Добрый день, Архитектор." : "Добрый вечер, Архитектор.";
+
+  return Response.json({
+    greeting,
+    storage: getStorageInfo(),
     player,
     quests: {
       active: activeQuests.length,
@@ -74,15 +58,5 @@ export async function GET(req: NextRequest) {
       done: doneTasks.length,
       total: tasks.length,
     },
-  };
-
-  return Response.json(report);
-}
-
-function getGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 6) return "Ночная смена, Архитектор. Вот что произошло:";
-  if (h < 12) return "Доброе утро, Архитектор. Ночной отчёт:";
-  if (h < 18) return "Добрый день, Архитектор. Статус дня:";
-  return "Добрый вечер, Архитектор. Итоги:";
+  });
 }

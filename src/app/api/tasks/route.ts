@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { type CursorTask, type TaskStatus, generateTaskId } from "@/lib/tasks";
+import { kvGet, kvSet, logAppend, chatSave, sendWebhook } from "@/lib/storage";
 
 const KV_KEY = "cursor_tasks";
 
@@ -11,15 +11,6 @@ const STATUS_EMOJI: Record<TaskStatus, string> = {
   cancelled: "❌",
 };
 
-function getSupabase(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
-
-type SB = SupabaseClient;
-
 function checkAuth(req: NextRequest): boolean {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   const secret = process.env.API_SECRET;
@@ -27,33 +18,10 @@ function checkAuth(req: NextRequest): boolean {
   return token === secret;
 }
 
-async function getTasks(sb: SB): Promise<CursorTask[]> {
-  const { data } = await sb
-    .from("kv_store")
-    .select("value")
-    .eq("key", KV_KEY)
-    .maybeSingle();
-  if (!data) return [];
-  return (data as { value: CursorTask[] }).value || [];
-}
-
-async function saveTasks(sb: SB, tasks: CursorTask[]) {
-  await sb.from("kv_store").upsert(
-    { key: KV_KEY, value: tasks as unknown, updated_at: new Date().toISOString() } as never,
-  );
-}
-
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!checkAuth(req)) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const sb = getSupabase();
-  if (!sb) {
-    return Response.json({ error: "Supabase not configured" }, { status: 500 });
-  }
-
-  const tasks = await getTasks(sb);
+  const tasks = await kvGet<CursorTask[]>(KV_KEY, []);
 
   const status = req.nextUrl.searchParams.get("status");
   const agent = req.nextUrl.searchParams.get("agent");
@@ -68,32 +36,16 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const sb = getSupabase();
-  if (!sb) {
-    return Response.json({ error: "Supabase not configured" }, { status: 500 });
-  }
+  if (!checkAuth(req)) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   let body;
-  try {
-    body = await req.json();
-  } catch {
+  try { body = await req.json(); } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
   const {
-    title,
-    description,
-    priority = "normal",
-    project = "frogface",
-    agent = "cursor",
-    context,
-    files,
-    acceptance,
-    quest_id,
+    title, description, priority = "normal", project = "frogface",
+    agent = "cursor", context, files, acceptance, quest_id,
   } = body;
 
   if (!title || !description) {
@@ -102,137 +54,49 @@ export async function POST(req: NextRequest) {
 
   const now = new Date().toISOString();
   const task: CursorTask = {
-    id: generateTaskId(),
-    title,
-    status: "pending",
-    priority,
-    project,
-    agent,
-    description,
-    context,
-    files,
-    acceptance,
-    quest_id,
-    created: now,
-    updated: now,
+    id: generateTaskId(), title, status: "pending", priority, project, agent,
+    description, context, files, acceptance, quest_id, created: now, updated: now,
   };
 
-  const tasks = await getTasks(sb);
+  const tasks = await kvGet<CursorTask[]>(KV_KEY, []);
   tasks.push(task);
-  await saveTasks(sb, tasks);
-
-  await sb.from("activity_log").insert(
-    { source: "tasks", type: "log", text: `Новая задача: ${task.title} [${task.id}] → ${task.agent}` } as never,
-  );
+  await kvSet(KV_KEY, tasks);
+  await logAppend({ source: "tasks", type: "log", text: `Новая задача: ${task.title} [${task.id}] → ${task.agent}` });
 
   return Response.json({ ok: true, task });
 }
 
-async function notifyMoltbot(sb: SB, task: CursorTask, newStatus: TaskStatus) {
-  const emoji = STATUS_EMOJI[newStatus];
-  const lines = [
-    `${emoji} Задача обновлена: **${task.title}**`,
-    `Статус: ${newStatus} | Проект: ${task.project} | ID: ${task.id}`,
-  ];
-  if (task.result) {
-    lines.push(`Результат: ${task.result}`);
-  }
-  const text = lines.join("\n");
-
-  await sb.from("chat_messages").insert(
-    { agent_id: "moltbot", role: "system", content: text } as never,
-  );
-
-  await sb.from("chat_messages").insert(
-    { agent_id: "command", role: "system", content: text } as never,
-  );
-}
-
-async function sendWebhook(task: CursorTask, newStatus: TaskStatus) {
-  const webhookUrl = process.env.TASK_WEBHOOK_URL;
-  if (!webhookUrl) return;
-
-  const emoji = STATUS_EMOJI[newStatus];
-  const payload: Record<string, unknown> = {
-    task_id: task.id,
-    title: task.title,
-    status: newStatus,
-    project: task.project,
-    result: task.result || null,
-  };
-
-  if (webhookUrl.includes("api.telegram.org")) {
-    const chatId = process.env.TELEGRAM_CHAT_ID;
-    if (!chatId) return;
-    const text = [
-      `${emoji} *${task.title}*`,
-      `Статус: \`${newStatus}\``,
-      `Проект: ${task.project}`,
-      `ID: \`${task.id}\``,
-      task.result ? `\nРезультат: ${task.result}` : "",
-    ].filter(Boolean).join("\n");
-
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "Markdown" }),
-    }).catch(() => {});
-  } else {
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    }).catch(() => {});
-  }
-}
-
 export async function PATCH(req: NextRequest) {
-  if (!checkAuth(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const sb = getSupabase();
-  if (!sb) {
-    return Response.json({ error: "Supabase not configured" }, { status: 500 });
-  }
+  if (!checkAuth(req)) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   let body;
-  try {
-    body = await req.json();
-  } catch {
+  try { body = await req.json(); } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
   const { id, status, result, ...rest } = body;
+  if (!id) return Response.json({ error: "id is required" }, { status: 400 });
 
-  if (!id) {
-    return Response.json({ error: "id is required" }, { status: 400 });
-  }
-
-  const tasks = await getTasks(sb);
+  const tasks = await kvGet<CursorTask[]>(KV_KEY, []);
   const idx = tasks.findIndex((t) => t.id === id);
-  if (idx === -1) {
-    return Response.json({ error: "Task not found" }, { status: 404 });
-  }
+  if (idx === -1) return Response.json({ error: "Task not found" }, { status: 404 });
 
   const updated: CursorTask = {
-    ...tasks[idx],
-    ...rest,
+    ...tasks[idx], ...rest,
     ...(status && { status }),
     ...(result && { result }),
     updated: new Date().toISOString(),
   };
   tasks[idx] = updated;
-  await saveTasks(sb, tasks);
+  await kvSet(KV_KEY, tasks);
 
   if (status) {
     const emoji = STATUS_EMOJI[status as TaskStatus] || "📋";
-    await sb.from("activity_log").insert(
-      { source: "tasks", type: "log", text: `${emoji} Задача ${id}: ${updated.title} → ${status}` } as never,
-    );
-
-    await notifyMoltbot(sb, updated, status as TaskStatus);
-    sendWebhook(updated, status as TaskStatus);
+    const logText = `${emoji} Задача ${id}: ${updated.title} → ${status}`;
+    await logAppend({ source: "tasks", type: "log", text: logText });
+    await chatSave({ agent_id: "moltbot", role: "system", content: logText });
+    await chatSave({ agent_id: "command", role: "system", content: logText });
+    sendWebhook(logText);
   }
 
   return Response.json({ ok: true, task: updated, notified: !!status });
