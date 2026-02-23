@@ -2,682 +2,481 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Zap,
-  TrendingUp,
-  Target,
-  Clock,
-  Flame,
-  Trophy,
-  CheckCircle2,
-  Circle,
-  Plus,
+  Send,
   Mic,
   MicOff,
+  Bot,
+  User,
+  Sparkles,
+  Volume2,
+  VolumeX,
   Loader2,
+  Zap,
+  Target,
+  TrendingUp,
+  Flame,
+  ListTodo,
+  CheckCircle2,
+  Circle,
+  Crown,
   ChevronDown,
   ChevronUp,
-  Maximize2,
-  Minimize2,
-  Bot,
-  Database,
-  Smartphone,
+  Radio,
   SkipForward,
-  Calendar,
+  Copy,
+  X,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useChatHistory, type ChatMsg } from "@/lib/use-chat-history";
 import { usePersistedState } from "@/lib/use-persisted-state";
+import { speak, stopSpeaking, preloadVoices } from "@/lib/tts";
+import { parseActions, executeActions, listActiveQuests } from "@/lib/quest-store";
 
-interface Quest {
-  id: string;
-  title: string;
-  project: string;
-  xp: number;
-  priority: "normal" | "critical" | "boss";
-  progress: number;
-  done: boolean;
+function now() {
+  return new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 }
-
-interface LogItem {
-  id: string;
-  time: string;
-  text: string;
-  type: "story" | "achievement" | "gold" | "xp" | "log" | "voice";
-}
-
-const INITIAL_QUESTS: Quest[] = [
-  { id: "q1", title: "Первые 10 платящих на MyReply", project: "MyReply", xp: 800, priority: "boss", progress: 10, done: false },
-  { id: "q2", title: "Запуск сайта Edison Bar — 10 дней", project: "Edison", xp: 500, priority: "boss", progress: 30, done: false },
-  { id: "q3", title: "Съёмки «Идущий к руке» (ср-чт-пт)", project: "YouTube", xp: 300, priority: "critical", progress: 0, done: false },
-  { id: "q4", title: "Промокоды MyReply 7 дней — раздать своим", project: "MyReply", xp: 200, priority: "critical", progress: 0, done: false },
-  { id: "q5", title: "Планёрка с Машей (стратегия Edison)", project: "Edison", xp: 150, priority: "critical", progress: 0, done: false },
-  { id: "q6", title: "Пост soft launch MyReply от Frogface-бота", project: "MyReply", xp: 150, priority: "critical", progress: 0, done: false },
-  { id: "q7", title: "Допилить HTTP-мост OpenClaw → frogface.space", project: "Frogface", xp: 200, priority: "critical", progress: 80, done: false },
-  { id: "q8", title: "UGC-конкурс «самый трешовый отзыв»", project: "MyReply", xp: 150, priority: "normal", progress: 0, done: false },
-  { id: "q9", title: "Freepik Pipeline: batch вывесок Edison", project: "Edison", xp: 100, priority: "normal", progress: 0, done: false },
-  { id: "q10", title: "Добавить OPENCLAW_URL + TOKEN в Vercel", project: "Frogface", xp: 100, priority: "critical", progress: 0, done: false },
-];
-
-const INITIAL_LOG: LogItem[] = [
-  { id: "d1k", time: "День 1, ночь", text: "OpenClaw Gateway поднят на VPS Jino. Probe: OK. HTTP-мост создан.", type: "achievement" },
-  { id: "d1j", time: "День 1, ночь", text: "Moltbot управляет квестами из чата — создавай и завершай голосом.", type: "achievement" },
-  { id: "d1i", time: "День 1, вечер", text: "Голосовой режим: микрофон + TTS ответы на русском. Замена ChatGPT Voice.", type: "achievement" },
-  { id: "d1h", time: "День 1, вечер", text: "Интерактивная Летопись: Game Master ведёт ритуал закрытия дня.", type: "achievement" },
-  { id: "d1g", time: "День 1, вечер", text: "Zen Mode + Мана чек-ин + Голосовой Поток — три новых механики.", type: "achievement" },
-  { id: "d1f", time: "День 1, день", text: "OpenClaw интеграция: код готов, VPS настроен, осталось допилить мост.", type: "xp" },
-  { id: "d1e", time: "День 1, день", text: "8 AI-агентов с персональными промптами и полным контекстом.", type: "xp" },
-  { id: "d1d", time: "День 1, день", text: "PWA установка + мобильная вёрстка на всех страницах.", type: "achievement" },
-  { id: "d1c", time: "День 1, день", text: "OpenRouter: живые AI-ответы вместо заглушек.", type: "achievement" },
-  { id: "d1b", time: "День 1, день", text: "API endpoints для Custom GPT Actions.", type: "xp" },
-  { id: "d1a", time: "День 1, утро", text: "Frogface.space построен с нуля. Глава 1 начинается.", type: "story" },
-];
 
 const MANA_LABELS = ["", "Пустой", "Тяжело", "Норм", "Хорошо", "Огонь"];
 const MANA_COLORS = ["", "text-hp", "text-hp", "text-gold", "text-xp", "text-xp"];
 
-function getTimeOfDay() {
+function getGreeting() {
   const h = new Date().getHours();
-  if (h < 6) return "night";
-  if (h < 12) return "morning";
-  if (h < 18) return "day";
-  return "evening";
+  if (h < 6) return "Ночная смена";
+  if (h < 12) return "Доброе утро";
+  if (h < 18) return "Добрый день";
+  return "Добрый вечер";
 }
 
-function getGreeting() {
-  const tod = getTimeOfDay();
-  if (tod === "morning") return "Доброе утро, Архитектор";
-  if (tod === "day") return "Добрый день, Архитектор";
-  if (tod === "evening") return "Добрый вечер, Архитектор";
-  return "Ночная смена, Архитектор";
-}
+const INITIAL_MESSAGES: ChatMsg[] = [
+  {
+    id: "greeting",
+    role: "assistant",
+    text: `${getGreeting()}, Архитектор. Moltbot на связи. Все системы активны.\n\nЧто делаем?`,
+    time: now(),
+  },
+];
+
+const SYSTEM_PROMPT = [
+  "Ты — Moltbot, операционный директор Frogface Studio.",
+  "Координируешь 8 агентов, управляешь приоритетами.",
+  "",
+  "Архитектор — Сергей. Креативный директор. Ценности: свобода + комфорт. Сейчас в Таиланде.",
+  "Workflow: гулять → наговаривать потоки → структурировать → задачи агентам.",
+  "",
+  "Проекты:",
+  "- MyReply: AI-ответы на отзывы, MRR 178K₽→500K, soft launch. Чек 490₽/мес.",
+  "- Edison Bar: ресторан Иркутск, автономия. Сайт почти готов.",
+  "- «Идущий к руке»: YouTube, съёмки ср-чт-пт.",
+  "- Frogface.space: этот дашборд, PWA, RPG-система.",
+  "",
+  "Глава 1: Фундамент, 30-дневный спринт.",
+  "Стиль: дружелюбный, лаконичный, с RPG-нарративом. Русский.",
+  "",
+  "ВАЖНО: Если голосовой режим — отвечай коротко, 2-4 предложения.",
+  "",
+  "=== КОМАНДЫ ===",
+  "Создать квест: [QUEST:CREATE|название|проект|приоритет|xp]",
+  "Завершить: [QUEST:COMPLETE|часть названия]",
+  "Список: [QUEST:LIST]",
+  "Задача для Cursor: [TASK:CREATE|название|описание|проект|приоритет|cursor]",
+  "",
+  "=== RPG ===",
+  "XP, уровни, ачивки — всё живое, хранится на сервере.",
+  "При завершении квеста начисляется XP и может быть level up.",
+].join("\n");
 
 export default function HQPage() {
-  const [quests, setQuests] = usePersistedState("ff_hq_quests", INITIAL_QUESTS);
-  const [log, setLog] = usePersistedState("ff_hq_log", INITIAL_LOG);
+  const [messages, setMessages, clearChat] = useChatHistory("hq", INITIAL_MESSAGES);
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(true);
+  const [recording, setRecording] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
   const [mana, setMana] = usePersistedState("ff_mana", 0);
   const [manaDate, setManaDate] = usePersistedState("ff_mana_date", "");
-  const [zenMode, setZenMode] = usePersistedState("ff_zen", true);
-  const [logInput, setLogInput] = useState("");
+  const [showPanel, setShowPanel] = useState(true);
+  const [report, setReport] = useState<Record<string, unknown> | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const today = new Date().toISOString().split("T")[0];
   const manaCheckedToday = manaDate === today;
 
-  const activeQuests = quests.filter((q) => !q.done);
-  const topQuest = activeQuests.sort((a, b) => {
-    const p = { boss: 0, critical: 1, normal: 2 };
-    return p[a.priority] - p[b.priority];
-  })[0];
-  const nextQuests = activeQuests.filter((q) => q.id !== topQuest?.id).slice(0, 2);
+  const hasSpeechApi =
+    typeof window !== "undefined" &&
+    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
-  const toggleQuest = (id: string) => {
-    setQuests((prev) =>
-      prev.map((q) => {
-        if (q.id !== id) return q;
-        const done = !q.done;
-        if (done) {
-          setLog((l) => [
-            { id: Date.now().toString(), time: "сейчас", text: `Квест выполнен: ${q.title} (+${q.xp} XP)`, type: "xp" },
-            ...l,
-          ]);
-        }
-        return { ...q, done, progress: done ? 100 : q.progress };
-      }),
-    );
-  };
+  useEffect(() => { preloadVoices(); }, []);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages]);
+  useEffect(() => {
+    fetch("/api/report").then((r) => r.json()).then(setReport).catch(() => {});
+  }, []);
+
+  const speakText = useCallback((text: string) => {
+    if (!autoSpeak || !voiceMode) return;
+    setSpeaking(true);
+    speak(text, () => setSpeaking(false));
+  }, [autoSpeak, voiceMode]);
 
   const checkMana = (val: number) => {
     setMana(val);
     setManaDate(today);
-    setLog((prev) => [
-      { id: Date.now().toString(), time: "сейчас", text: `Мана: ${val}/5 — ${MANA_LABELS[val]}`, type: "log" },
-      ...prev,
-    ]);
   };
 
-  const addLogEntry = () => {
-    if (!logInput.trim()) return;
-    setLog((prev) => [
-      { id: Date.now().toString(), time: "сейчас", text: logInput, type: "log" },
-      ...prev,
-    ]);
-    setLogInput("");
-  };
+  const sendMessage = useCallback(async (text?: string) => {
+    const msg = text || input.trim();
+    if (!msg || isTyping) return;
 
-  const completedXp = quests.filter((q) => q.done).reduce((s, q) => s + q.xp, 0);
+    const userMsg: ChatMsg = { id: Date.now().toString(), role: "user", text: msg, time: now() };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setIsTyping(true);
 
-  // ─── ZEN MODE ─────────────────────────────────────────────
-  if (zenMode) {
-    return (
-      <div className="animate-fade-in flex min-h-[80vh] flex-col items-center justify-center px-4">
-        <p className="mb-1 text-sm text-text-dim">{getGreeting()}</p>
+    const botMsgId = (Date.now() + 1).toString();
 
-        {!manaCheckedToday ? (
-          <ManaCheckIn onCheck={checkMana} />
-        ) : (
-          <>
-            <div className="mb-6 flex items-center gap-2">
-              <Zap className={cn("h-4 w-4", MANA_COLORS[mana])} />
-              <span className={cn("text-sm font-medium", MANA_COLORS[mana])}>
-                Мана {mana}/5 — {MANA_LABELS[mana]}
-              </span>
-            </div>
+    try {
+      const history = messages
+        .filter((m) => m.role !== "system")
+        .slice(-20)
+        .map((m) => ({
+          role: m.role === "user" ? "user" as const : "assistant" as const,
+          content: m.text,
+        }));
+      history.push({ role: "user", content: msg });
 
-            {topQuest ? (
-              <div className="w-full max-w-md">
-                <p className="mb-2 text-center text-[10px] font-medium uppercase tracking-widest text-text-dim">
-                  Сейчас
-                </p>
-                <div className="rounded-2xl border border-accent/30 bg-bg-card p-6 text-center">
-                  <div className={cn(
-                    "mx-auto mb-3 inline-flex rounded-full px-3 py-1 text-[10px] font-medium",
-                    topQuest.priority === "boss" ? "bg-gold/20 text-gold" :
-                    topQuest.priority === "critical" ? "bg-hp/20 text-hp" : "bg-mana/20 text-mana",
-                  )}>
-                    {topQuest.priority === "boss" ? "БОСС" : topQuest.priority === "critical" ? "КРИТ" : "обычный"}
-                    {" · "}{topQuest.project}
-                  </div>
-                  <h2 className="text-lg font-bold text-text-bright">{topQuest.title}</h2>
-                  <p className="mt-1 text-xs text-xp">+{topQuest.xp} XP</p>
+      const activeQuests = listActiveQuests();
+      const questCtx = activeQuests.length > 0
+        ? "\n\nАктивные квесты:\n" + activeQuests.map((q, i) => `${i + 1}. [${q.priority}] ${q.title} (+${q.xp} XP)`).join("\n")
+        : "";
 
-                  {topQuest.progress > 0 && (
-                    <div className="mx-auto mt-4 h-1.5 w-48 rounded-full bg-bg-deep">
-                      <div
-                        className="h-full rounded-full bg-accent transition-all"
-                        style={{ width: `${topQuest.progress}%` }}
-                      />
-                    </div>
-                  )}
+      const systemContent = voiceMode
+        ? SYSTEM_PROMPT + questCtx + "\n\n[Голосовой режим. Коротко, без маркдаун.]"
+        : SYSTEM_PROMPT + questCtx;
 
-                  <div className="mt-5 flex items-center justify-center gap-3">
-                    <button
-                      onClick={() => toggleQuest(topQuest.id)}
-                      className="rounded-xl bg-xp/20 px-6 py-2.5 text-sm font-medium text-xp transition-colors hover:bg-xp/30"
-                    >
-                      <CheckCircle2 className="mr-1.5 inline h-4 w-4" />
-                      Готово
-                    </button>
-                    <button
-                      onClick={() => {
-                        const idx = quests.findIndex((q) => q.id === topQuest.id);
-                        if (idx >= 0) {
-                          setQuests((prev) => {
-                            const arr = [...prev];
-                            arr.push(arr.splice(idx, 1)[0]);
-                            return arr;
-                          });
-                        }
-                      }}
-                      className="rounded-xl bg-bg-deep px-4 py-2.5 text-sm text-text-dim transition-colors hover:bg-bg-hover hover:text-text"
-                    >
-                      <SkipForward className="mr-1 inline h-4 w-4" />
-                      Потом
-                    </button>
-                  </div>
-                </div>
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "system", content: systemContent }, ...history],
+          model: "Claude Sonnet 4",
+        }),
+      });
 
-                {nextQuests.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-center text-[10px] font-medium uppercase tracking-widest text-text-dim">Далее</p>
-                    {nextQuests.map((q) => (
-                      <div key={q.id} className="flex items-center gap-2 rounded-lg border border-border/30 bg-bg-deep/30 px-3 py-2">
-                        <Circle className="h-3.5 w-3.5 shrink-0 text-text-dim/30" />
-                        <span className="text-xs text-text-dim">{q.title}</span>
-                        <span className="ml-auto text-[10px] text-text-dim/50">{q.project}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error([err.error, err.details].filter(Boolean).join(" | "));
+      }
 
-                <VoiceStream
-                  onResult={(text) => {
-                    setLog((prev) => [
-                      { id: Date.now().toString(), time: "сейчас", text, type: "voice" },
-                      ...prev,
-                    ]);
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="text-center">
-                <Trophy className="mx-auto h-12 w-12 text-gold" />
-                <p className="mt-3 text-lg font-bold text-text-bright">Все квесты выполнены!</p>
-                <p className="text-sm text-text-dim">+{completedXp} XP за сегодня. Ты — легенда.</p>
-              </div>
-            )}
-          </>
-        )}
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let full = "";
 
-        <button
-          onClick={() => setZenMode(false)}
-          className="mt-8 flex items-center gap-1.5 text-[10px] text-text-dim/50 transition-colors hover:text-text-dim"
-        >
-          <Maximize2 className="h-3 w-3" />
-          Полный дашборд
-        </button>
-      </div>
-    );
-  }
+      setMessages((prev) => [...prev, { id: botMsgId, role: "assistant", text: "", time: now() }]);
+      setIsTyping(false);
 
-  // ─── FULL DASHBOARD ───────────────────────────────────────
-  return (
-    <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-text-bright">{getGreeting()}</h1>
-          <p className="mt-1 text-sm text-text-dim">
-            Глава 1 — &quot;Фундамент&quot; · Февраль 2026
-          </p>
-        </div>
-        <button
-          onClick={() => setZenMode(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[10px] text-text-dim transition-colors hover:border-accent/50 hover:text-accent"
-        >
-          <Minimize2 className="h-3 w-3" />
-          Zen
-        </button>
-      </div>
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        full += decoder.decode(value, { stream: true });
+        const snapshot = full;
+        setMessages((prev) => prev.map((m) => (m.id === botMsgId ? { ...m, text: snapshot } : m)));
+      }
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-        <StatCard
-          icon={<TrendingUp className="h-5 w-5 text-gold" />}
-          label="Золото (MRR)"
-          value="178K ₽"
-          delta="+12% за месяц"
-          accent="border-gold/30"
-        />
-        <div
-          className="cursor-pointer rounded-xl border border-mana/30 bg-bg-card p-4 transition-colors hover:border-mana/50"
-          onClick={() => { setManaDate(""); }}
-        >
-          <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-mana" />
-            <span className="text-xs text-text-dim">Мана</span>
-          </div>
-          <p className="mt-2 text-xl font-bold text-text-bright">
-            {manaCheckedToday ? `${mana}/5` : "—"}
-          </p>
-          <p className="mt-1 text-[10px] text-text-dim">
-            {manaCheckedToday ? MANA_LABELS[mana] : "Нажми для чек-ина"}
-          </p>
-        </div>
-        <StatCard
-          icon={<Flame className="h-5 w-5 text-xp" />}
-          label="XP сегодня"
-          value={`+${completedXp}`}
-          delta={`${quests.filter((q) => q.done).length} завершено`}
-          accent="border-xp/30"
-        />
-        <StatCard
-          icon={<Target className="h-5 w-5 text-accent" />}
-          label="Активные"
-          value={String(activeQuests.length)}
-          delta={`из ${quests.length} квестов`}
-          accent="border-accent/30"
-        />
-      </div>
+      const actions = parseActions(full);
+      if (actions.length > 0) {
+        const results = await executeActions(actions);
+        const cleaned = full.replace(/\[QUEST:.*?\]/g, "").replace(/\[TASK:CREATE\|.*?\]/g, "").trim();
+        const final = cleaned + (results.length ? "\n\n" + results.join("\n") : "");
+        setMessages((prev) => prev.map((m) => (m.id === botMsgId ? { ...m, text: final } : m)));
+        if (final) speakText(cleaned);
+      } else {
+        if (full) speakText(full);
+      }
+    } catch (err) {
+      const errorText = err instanceof Error ? err.message : "Ошибка";
+      setMessages((prev) => [
+        ...prev,
+        { id: botMsgId, role: "assistant", text: `⚠️ ${errorText}`, time: now() },
+      ]);
+      setIsTyping(false);
+    }
+  }, [input, isTyping, messages, setMessages, voiceMode, speakText]);
 
-      <VoiceStream
-        onResult={(text) => {
-          setLog((prev) => [
-            { id: Date.now().toString(), time: "сейчас", text, type: "voice" },
-            ...prev,
-          ]);
-        }}
-      />
-
-      <div className="grid gap-4 lg:grid-cols-3 lg:gap-6">
-        <div className="lg:col-span-2 rounded-xl border border-border bg-bg-card p-4 lg:p-5">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-bright">
-            <Target className="h-4 w-4 text-accent" />
-            Активные квесты
-          </h2>
-          <div className="space-y-3">
-            {quests.map((q) => (
-              <QuestRow key={q.id} quest={q} onToggle={toggleQuest} />
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-border bg-bg-card p-4 lg:p-5">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-bright">
-            <Trophy className="h-4 w-4 text-gold" />
-            Летопись
-          </h2>
-
-          <div className="mb-3 flex gap-2">
-            <input
-              type="text"
-              value={logInput}
-              onChange={(e) => setLogInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addLogEntry()}
-              placeholder="Записать в лог..."
-              className="flex-1 rounded-lg border border-border bg-bg-deep px-3 py-1.5 text-xs text-text placeholder:text-text-dim/40 focus:border-accent/50 focus:outline-none"
-            />
-            <button
-              onClick={addLogEntry}
-              disabled={!logInput.trim()}
-              className="rounded-lg bg-accent/20 px-2 text-accent transition-colors hover:bg-accent/30 disabled:opacity-30"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
-            {log.map((entry) => (
-              <LogEntry key={entry.id} entry={entry} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-border bg-bg-card p-4 lg:p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-text-bright">
-              <Clock className="h-4 w-4 text-mana" />
-              Глава 1: Фундамент
-            </h2>
-            <p className="mt-1 text-xs text-text-dim">
-              30-дневный спринт · Построить базу, запустить продукты, достичь 500K Gold
-            </p>
-          </div>
-          <div className="sm:text-right">
-            <p className="text-2xl font-bold text-accent">День 1</p>
-            <p className="text-[10px] text-text-dim">осталось 29 дней</p>
-          </div>
-        </div>
-        <div className="mt-4 h-2 rounded-full bg-bg-deep">
-          <div className="h-full w-[7%] rounded-full bg-gradient-to-r from-accent to-mana" />
-        </div>
-      </div>
-
-      <SystemStatus />
-    </div>
-  );
-}
-
-// ─── MANA CHECK-IN ────────────────────────────────────────
-function ManaCheckIn({ onCheck }: { onCheck: (val: number) => void }) {
-  return (
-    <div className="my-8 text-center">
-      <Zap className="mx-auto mb-3 h-8 w-8 text-mana" />
-      <p className="mb-1 text-sm font-medium text-text-bright">Как энергия сейчас?</p>
-      <p className="mb-5 text-xs text-text-dim">Нажми — и система подстроит нагрузку</p>
-      <div className="flex items-center justify-center gap-3">
-        {[1, 2, 3, 4, 5].map((val) => (
-          <button
-            key={val}
-            onClick={() => onCheck(val)}
-            className={cn(
-              "flex h-14 w-14 flex-col items-center justify-center rounded-xl border transition-all hover:scale-105",
-              val <= 2
-                ? "border-hp/30 hover:border-hp/60 hover:bg-hp/10"
-                : val <= 3
-                ? "border-gold/30 hover:border-gold/60 hover:bg-gold/10"
-                : "border-xp/30 hover:border-xp/60 hover:bg-xp/10",
-            )}
-          >
-            <span className="text-lg font-bold text-text-bright">{val}</span>
-            <span className="text-[8px] text-text-dim">{MANA_LABELS[val]}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── VOICE STREAM ─────────────────────────────────────────
-function VoiceStream({ onResult }: { onResult: (text: string) => void }) {
-  const [recording, setRecording] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-
-  const hasSpeechApi = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
-
-  const startRecording = useCallback(() => {
+  const toggleRecording = useCallback(() => {
+    if (recording) {
+      recognitionRef.current?.stop();
+      setRecording(false);
+      return;
+    }
     if (!hasSpeechApi) return;
+    stopSpeaking(); setSpeaking(false);
+
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SR();
     recognition.lang = "ru-RU";
     recognition.interimResults = true;
     recognition.continuous = true;
-
     let fullText = "";
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let interim = "";
+      let current = "";
       for (let i = 0; i < event.results.length; i++) {
         const t = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          fullText += t + " ";
-        } else {
-          interim = t;
-        }
+        if (event.results[i].isFinal) fullText += t + " ";
+        else current = t;
       }
-      setTranscript(fullText + interim);
+      setInput(fullText + current);
     };
-
-    recognition.onerror = () => setRecording(false);
     recognition.onend = () => {
       setRecording(false);
-      if (fullText.trim()) {
-        setProcessing(true);
-        processVoiceStream(fullText.trim()).then((result) => {
-          onResult(result || fullText.trim());
-          setProcessing(false);
-          setTranscript("");
-        });
-      }
+      if (fullText.trim()) { setInput(""); sendMessage(fullText.trim()); }
     };
-
+    recognition.onerror = () => setRecording(false);
     recognition.start();
     recognitionRef.current = recognition;
     setRecording(true);
-    setTranscript("");
-  }, [hasSpeechApi, onResult]);
+  }, [recording, hasSpeechApi, sendMessage]);
 
-  const stopRecording = useCallback(() => {
-    recognitionRef.current?.stop();
-  }, []);
-
-  if (!hasSpeechApi) return null;
+  const rp = report as { player?: { level?: number; xp?: number; gold?: number; mana?: number }; quests?: { active?: number }; content?: { pending_review?: number }; cursor_tasks?: { pending?: number } } | null;
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      {transcript && (
-        <div className="w-full max-w-md rounded-lg border border-border/30 bg-bg-deep/30 px-4 py-2">
-          <p className="text-xs text-text-dim/70">{transcript}</p>
-        </div>
-      )}
-      <button
-        onClick={recording ? stopRecording : startRecording}
-        disabled={processing}
-        className={cn(
-          "flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium transition-all",
-          recording
-            ? "bg-hp/20 text-hp animate-pulse"
-            : processing
-            ? "bg-bg-deep text-text-dim"
-            : "bg-accent/10 text-accent hover:bg-accent/20",
-        )}
-      >
-        {processing ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Обрабатываю...
-          </>
-        ) : recording ? (
-          <>
-            <MicOff className="h-4 w-4" />
-            Остановить
-          </>
-        ) : (
-          <>
-            <Mic className="h-4 w-4" />
-            Поток
-          </>
-        )}
-      </button>
-    </div>
-  );
-}
-
-async function processVoiceStream(text: string): Promise<string> {
-  try {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "Claude Haiku",
-        messages: [
-          {
-            role: "system",
-            content:
-              "Ты — Moltbot, ассистент Архитектора. Тебе приходит голосовой поток (транскрипция). Кратко структурируй: выдели задачи (если есть), идеи, решения. Формат: одно-два предложения итога. Если это просто мысль — перефразируй кратко. Русский язык.",
-          },
-          { role: "user", content: `Голосовой поток: "${text}"` },
-        ],
-      }),
-    });
-    if (!res.ok) return text;
-    return await res.text() || text;
-  } catch {
-    return text;
-  }
-}
-
-// ─── SHARED COMPONENTS ──────────────────────────────────────
-
-function StatCard({
-  icon, label, value, delta, accent,
-}: {
-  icon: React.ReactNode; label: string; value: string; delta: string; accent: string;
-}) {
-  return (
-    <div className={`rounded-xl border ${accent} bg-bg-card p-4`}>
-      <div className="flex items-center gap-2">
-        {icon}
-        <span className="text-xs text-text-dim">{label}</span>
-      </div>
-      <p className="mt-2 text-xl font-bold text-text-bright">{value}</p>
-      <p className="mt-1 text-[10px] text-text-dim">{delta}</p>
-    </div>
-  );
-}
-
-function QuestRow({ quest, onToggle }: { quest: Quest; onToggle: (id: string) => void }) {
-  const priorityColors = {
-    normal: "bg-mana/20 text-mana",
-    critical: "bg-hp/20 text-hp",
-    boss: "bg-gold/20 text-gold",
-  };
-  const priorityLabels = { normal: "обычный", critical: "крит", boss: "БОСС" };
-
-  return (
-    <div
-      className={cn(
-        "flex items-center gap-2 rounded-lg border border-border/50 bg-bg-deep/50 px-3 py-2.5 lg:gap-3 lg:px-4 lg:py-3 transition-all",
-        quest.done && "opacity-50",
-      )}
-    >
-      <button onClick={() => onToggle(quest.id)} className="shrink-0">
-        {quest.done ? (
-          <CheckCircle2 className="h-5 w-5 text-xp" />
-        ) : (
-          <Circle className="h-5 w-5 text-text-dim/40 transition-colors hover:text-accent" />
-        )}
-      </button>
-      <div className="flex-1">
-        <div className="flex flex-wrap items-center gap-1.5 lg:gap-2">
-          <span className={cn("text-xs lg:text-sm text-text-bright", quest.done && "line-through")}>
-            {quest.title}
-          </span>
-          <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${priorityColors[quest.priority]}`}>
-            {priorityLabels[quest.priority]}
-          </span>
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-2 lg:mt-1.5 lg:gap-3">
-          <span className="text-[10px] text-text-dim">{quest.project}</span>
-          <span className="text-[10px] text-xp">+{quest.xp} XP</span>
-          <div className="hidden h-1 w-24 rounded-full bg-border sm:block">
-            <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${quest.progress}%` }} />
+    <div className="animate-fade-in flex h-[calc(100vh-5rem)] flex-col lg:h-[calc(100vh-3rem)]">
+      {/* Top bar */}
+      <div className="flex items-center justify-between border-b border-border bg-bg-card px-4 py-2.5">
+        <div className="flex items-center gap-3">
+          <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", voiceMode ? "bg-xp/20" : "bg-accent/20")}>
+            {voiceMode ? <Radio className="h-4 w-4 text-xp" /> : <Bot className="h-4 w-4 text-accent" />}
           </div>
-          <span className="hidden text-[10px] text-text-dim sm:inline">{quest.progress}%</span>
+          <div>
+            <h1 className="text-sm font-semibold text-text-bright">
+              {getGreeting()}, Архитектор
+            </h1>
+            <div className="flex items-center gap-3 text-[10px] text-text-dim">
+              <span className="text-xp">● Moltbot</span>
+              {rp?.player && <span>Ур.{rp.player.level}</span>}
+              {rp?.player && <span className="text-gold">{rp.player.gold}K₽</span>}
+              {rp?.quests && <span>{rp.quests.active} квестов</span>}
+              {rp?.content?.pending_review ? <span className="text-gold">{rp.content.pending_review} постов на проверку</span> : null}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {!manaCheckedToday && (
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((v) => (
+                <button key={v} onClick={() => checkMana(v)} className={cn("h-6 w-6 rounded text-[10px] font-bold transition-all hover:scale-110", v <= 2 ? "text-hp hover:bg-hp/10" : v <= 3 ? "text-gold hover:bg-gold/10" : "text-xp hover:bg-xp/10")}>{v}</button>
+              ))}
+            </div>
+          )}
+          {manaCheckedToday && <span className={cn("text-xs font-medium", MANA_COLORS[mana])}>⚡{mana}/5</span>}
+          {voiceMode && (
+            <button onClick={() => setAutoSpeak((v) => !v)} className={cn("rounded p-1", autoSpeak ? "text-xp" : "text-text-dim/40")} title="TTS">
+              {autoSpeak ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+            </button>
+          )}
+          <button onClick={() => setVoiceMode(!voiceMode)} className={cn("rounded-lg px-2 py-1 text-[10px] font-medium", voiceMode ? "bg-xp/20 text-xp" : "text-text-dim hover:text-accent")}>
+            {voiceMode ? "🎙 Голос" : "Голос"}
+          </button>
+          <button onClick={() => setShowPanel(!showPanel)} className="rounded p-1 text-text-dim hover:text-text lg:hidden">
+            {showPanel ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Chat */}
+        <div className="flex flex-1 flex-col">
+          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto bg-bg-deep/30 p-4">
+            {messages.map((msg) => (
+              <MessageBubble key={msg.id} message={msg} onSpeak={voiceMode ? (t) => { stopSpeaking(); speakText(t); } : undefined} />
+            ))}
+            {isTyping && (
+              <div className="flex items-center gap-2 text-sm text-text-dim">
+                <Bot className="h-4 w-4 animate-pulse text-accent" />
+                <span className="animate-pulse">Moltbot думает...</span>
+              </div>
+            )}
+          </div>
+
+          {/* Input */}
+          <div className="border-t border-border bg-bg-card p-3">
+            {voiceMode && speaking && (
+              <div className="mb-2 flex items-center justify-center gap-2 text-xs text-xp">
+                <Volume2 className="h-3 w-3 animate-pulse" /> Moltbot говорит...
+                <button onClick={() => { stopSpeaking(); setSpeaking(false); }} className="text-text-dim hover:text-text">стоп</button>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              {hasSpeechApi && (
+                <button onClick={toggleRecording} className={cn("rounded-lg p-2.5 transition-colors", recording ? "bg-hp/20 text-hp animate-pulse" : "text-text-dim hover:bg-bg-hover hover:text-accent")}>
+                  {recording ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                </button>
+              )}
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                placeholder={recording ? "Говори..." : "Написать Moltbot..."}
+                className="flex-1 rounded-lg border border-border bg-bg-deep px-4 py-2.5 text-sm text-text placeholder:text-text-dim/40 focus:border-accent/50 focus:outline-none"
+              />
+              <button onClick={() => sendMessage()} disabled={!input.trim() || isTyping} className="rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent-dim disabled:opacity-30">
+                <Send className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {["/status", "/quests", "/report", "/tasks", "генерируй контент"].map((cmd) => (
+                <button key={cmd} onClick={() => setInput(cmd)} className="rounded-md border border-border px-2 py-1 text-[10px] text-text-dim hover:border-accent/50 hover:text-accent">{cmd}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Side panel — stats & quick actions */}
+        <div className={cn("w-72 shrink-0 overflow-y-auto border-l border-border bg-bg-card p-4 space-y-4", showPanel ? "block" : "hidden lg:block")}>
+          {/* Player stats */}
+          {rp?.player && (
+            <div className="space-y-2">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-text-dim">Игрок</p>
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-mana">
+                  <Sparkles className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-text-bright">Ур. {rp.player.level}</p>
+                  <p className="text-[10px] text-text-dim">{rp.player.xp} XP</p>
+                </div>
+              </div>
+              <MiniBar label="Gold" value={rp.player.gold || 0} max={500} color="bg-gold" />
+              <MiniBar label="Mana" value={manaCheckedToday ? mana : (rp.player.mana || 0)} max={100} color="bg-mana" />
+            </div>
+          )}
+
+          {/* Quick actions */}
+          <div className="space-y-2">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-text-dim">Быстрые действия</p>
+            <QuickBtn icon={<Sparkles className="h-3.5 w-3.5" />} label="Контент-конвейер" href="/pipeline" count={rp?.content?.pending_review} color="text-gold" />
+            <QuickBtn icon={<ListTodo className="h-3.5 w-3.5" />} label="Задачи Cursor" href="/tasks" count={rp?.cursor_tasks?.pending} color="text-accent" />
+            <QuickBtn icon={<Target className="h-3.5 w-3.5" />} label="Квесты" href="/quests" count={rp?.quests?.active} color="text-xp" />
+            <QuickBtn icon={<TrendingUp className="h-3.5 w-3.5" />} label="Игрок" href="/player" color="text-mana" />
+          </div>
+
+          {/* Active quests mini */}
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-text-dim">Топ квесты</p>
+            <QuestsMini />
+          </div>
+
+          {/* System status */}
+          <SystemMini />
         </div>
       </div>
     </div>
   );
 }
 
-function LogEntry({ entry }: { entry: LogItem }) {
-  const colors: Record<string, string> = {
-    story: "border-l-accent",
-    achievement: "border-l-xp",
-    gold: "border-l-gold",
-    xp: "border-l-mana",
-    log: "border-l-text-dim",
-    voice: "border-l-accent",
-  };
-  const icons: Record<string, string> = {
-    story: "📖",
-    achievement: "🏆",
-    gold: "💰",
-    xp: "✨",
-    log: "📝",
-    voice: "🎤",
-  };
-
+function MessageBubble({ message, onSpeak }: { message: ChatMsg; onSpeak?: (text: string) => void }) {
+  const [copied, setCopied] = useState(false);
+  if (message.role === "system") {
+    return (
+      <div className="flex justify-center">
+        <span className="rounded-full bg-accent/10 px-4 py-1.5 text-[10px] text-accent">{message.text}</span>
+      </div>
+    );
+  }
+  const isUser = message.role === "user";
   return (
-    <div className={`border-l-2 ${colors[entry.type]} pl-3`}>
-      <p className="text-xs text-text">
-        <span className="mr-1">{icons[entry.type]}</span>
-        {entry.text}
-      </p>
-      <p className="mt-0.5 text-[10px] text-text-dim">{entry.time}</p>
+    <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : ""}`}>
+      <div className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", isUser ? "bg-mana/20" : "bg-accent/20")}>
+        {isUser ? <User className="h-3.5 w-3.5 text-mana" /> : <Sparkles className="h-3.5 w-3.5 text-accent" />}
+      </div>
+      <div className={cn("group max-w-[80%] rounded-xl px-3.5 py-2.5", isUser ? "bg-mana/10 text-text" : "border border-border/50 bg-bg-card text-text")}>
+        <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.text}</p>
+        <div className="mt-1 flex items-center gap-2">
+          {message.time && <p className="text-[10px] text-text-dim">{message.time}</p>}
+          {!isUser && message.text && (
+            <div className="invisible flex items-center gap-1 group-hover:visible">
+              {onSpeak && (
+                <button onClick={() => onSpeak(message.text)} className="text-text-dim/30 hover:text-accent"><Volume2 className="h-3 w-3" /></button>
+              )}
+              <button onClick={() => { navigator.clipboard.writeText(message.text); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="text-text-dim/30 hover:text-accent">
+                {copied ? <Check className="h-3 w-3 text-xp" /> : <Copy className="h-3 w-3" />}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-function SystemStatus() {
-  const [status, setStatus] = useState<{
-    ai: boolean; openclaw: boolean; mode: string; pwa: boolean;
-  }>({ ai: false, openclaw: false, mode: "...", pwa: false });
+function MiniBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-10 text-[10px] text-text-dim">{label}</span>
+      <div className="h-1.5 flex-1 rounded-full bg-bg-deep">
+        <div className={cn("h-full rounded-full", color)} style={{ width: `${Math.min((value / max) * 100, 100)}%` }} />
+      </div>
+      <span className="w-10 text-right text-[10px] text-text-dim">{value}</span>
+    </div>
+  );
+}
 
+function QuickBtn({ icon, label, href, count, color = "text-text-dim" }: { icon: React.ReactNode; label: string; href: string; count?: number; color?: string }) {
+  return (
+    <a href={href} className="flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 text-xs text-text-dim transition-colors hover:border-accent/30 hover:text-text">
+      <span className={color}>{icon}</span>
+      <span className="flex-1">{label}</span>
+      {count !== undefined && count > 0 && (
+        <span className={cn("rounded-full bg-bg-deep px-1.5 py-0.5 text-[10px] font-bold", color)}>{count}</span>
+      )}
+    </a>
+  );
+}
+
+function QuestsMini() {
+  const [quests, setQuests] = useState<{ title: string; priority: string; xp: number }[]>([]);
   useEffect(() => {
-    fetch("/api/chat")
-      .then((r) => r.json())
-      .then((d) =>
-        setStatus((s) => ({
-          ...s,
-          ai: d.hasKey || d.openclaw,
-          openclaw: !!d.openclaw,
-          mode: d.mode === "openclaw" ? "OpenClaw VPS" : d.hasKey ? "OpenRouter" : "offline",
-        })),
-      )
-      .catch(() => {});
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistration().then((reg) => {
-        setStatus((s) => ({ ...s, pwa: !!reg }));
-      });
-    }
+    try {
+      const active = listActiveQuests();
+      setQuests(active.slice(0, 4).map((q) => ({ title: q.title, priority: q.priority, xp: q.xp })));
+    } catch {}
   }, []);
 
-  const items = [
-    { label: status.mode, ok: status.ai, icon: Bot },
-    { label: "OpenClaw RAG", ok: status.openclaw, icon: Database },
-    { label: "PWA", ok: status.pwa, icon: Smartphone },
-  ];
+  if (quests.length === 0) return <p className="text-[10px] text-text-dim/50">Нет квестов</p>;
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/50 bg-bg-card/50 px-4 py-2.5">
-      <span className="text-[10px] font-medium text-text-dim">Системы:</span>
-      {items.map((item) => (
-        <div key={item.label} className="flex items-center gap-1.5">
-          <item.icon className={cn("h-3 w-3", item.ok ? "text-xp" : "text-text-dim/30")} />
-          <span className={cn("text-[10px]", item.ok ? "text-text" : "text-text-dim/40")}>{item.label}</span>
-          <div className={cn("h-1.5 w-1.5 rounded-full", item.ok ? "bg-xp" : "bg-text-dim/20")} />
+    <div className="space-y-1">
+      {quests.map((q, i) => (
+        <div key={i} className="flex items-center gap-1.5 rounded px-2 py-1 text-[10px]">
+          <span className={cn("font-bold", q.priority === "boss" ? "text-gold" : q.priority === "critical" ? "text-hp" : "text-text-dim")}>
+            {q.priority === "boss" ? "👑" : q.priority === "critical" ? "🔥" : "○"}
+          </span>
+          <span className="flex-1 truncate text-text-dim">{q.title}</span>
+          <span className="text-xp/50">+{q.xp}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+function SystemMini() {
+  const [status, setStatus] = useState<{ mode?: string; openclaw?: boolean }>({});
+  useEffect(() => {
+    fetch("/api/chat").then((r) => r.json()).then(setStatus).catch(() => {});
+  }, []);
+
+  return (
+    <div className="space-y-1">
+      <p className="text-[10px] font-medium uppercase tracking-wider text-text-dim">Система</p>
+      <div className="flex items-center gap-1.5">
+        <div className={cn("h-1.5 w-1.5 rounded-full", status.openclaw ? "bg-xp" : "bg-text-dim/20")} />
+        <span className="text-[10px] text-text-dim">{status.mode === "openclaw" ? "OpenClaw VPS" : status.mode || "..."}</span>
+      </div>
     </div>
   );
 }

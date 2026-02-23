@@ -14,6 +14,7 @@ import {
   BookOpen,
   ListTodo,
   Sparkles,
+  FlaskConical,
   LogOut,
   Menu,
   X,
@@ -30,6 +31,7 @@ const NAV = [
   { href: "/pipeline", label: "Конвейер", icon: Sparkles, description: "AI-контент" },
   { href: "/tasks", label: "Задачи", icon: ListTodo, description: "Очередь для Cursor" },
   { href: "/command", label: "Команды", icon: Terminal, description: "Чат с Moltbot" },
+  { href: "/test", label: "Тесты", icon: FlaskConical, description: "Проверка систем" },
 ];
 
 export function Sidebar() {
