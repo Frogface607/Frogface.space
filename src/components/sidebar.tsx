@@ -12,6 +12,7 @@ import {
   Gamepad2,
   ScrollText,
   BookOpen,
+  ListTodo,
   LogOut,
   Menu,
   X,
@@ -25,6 +26,7 @@ const NAV = [
   { href: "/projects", label: "Проекты", icon: FolderKanban, description: "Доска миссий" },
   { href: "/studio", label: "Студия", icon: Building2, description: "Офис агентов" },
   { href: "/chronicle", label: "Летопись", icon: BookOpen, description: "Game Master" },
+  { href: "/tasks", label: "Задачи", icon: ListTodo, description: "Очередь для Cursor" },
   { href: "/command", label: "Команды", icon: Terminal, description: "Чат с Moltbot" },
 ];
 

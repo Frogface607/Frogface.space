@@ -73,6 +73,18 @@ const SYSTEM_PROMPT = [
   "Если просит показать квесты/задачи — ВСЕГДА используй [QUEST:LIST].",
   "Если говорит что сделал что-то — предложи завершить соответствующий квест.",
   "Action-блоки ставь В КОНЦЕ текста, после своего ответа.",
+  "",
+  "=== ДЕЛЕГИРОВАНИЕ ЗАДАЧ В CURSOR ===",
+  "Для сложных технических задач (код, дашборд, API, дизайн) создавай задачу для Cursor:",
+  "Формат: [TASK:CREATE|название|описание|проект|приоритет|cursor]",
+  "  проект: myreply, edison, frogface, video, content",
+  "  приоритет: boss, critical, high, normal, low",
+  "",
+  "Пример:",
+  '  "Создам задачу для Cursor! [TASK:CREATE|SEO для лендинга|Оптимизировать метатеги и Open Graph для MyReply|myreply|high|cursor]"',
+  "",
+  "Используй [TASK:CREATE] когда задача требует написания кода или работы с проектом.",
+  "Используй [QUEST:CREATE] для обычных задач (звонки, контент, стратегия).",
 ].join("\n");
 
 export default function CommandPage() {
@@ -171,11 +183,10 @@ export default function CommandPage() {
           );
         }
 
-        // Parse and execute quest actions
         const actions = parseActions(full);
         if (actions.length > 0) {
-          const results = executeActions(actions);
-          const cleanedText = full.replace(/\[QUEST:.*?\]/g, "").trim();
+          const results = await executeActions(actions);
+          const cleanedText = full.replace(/\[QUEST:.*?\]/g, "").replace(/\[TASK:CREATE\|.*?\]/g, "").trim();
           const actionSummary = results.join("\n");
           const finalText = cleanedText + (actionSummary ? "\n\n" + actionSummary : "");
           setMessages((prev) =>
@@ -433,7 +444,7 @@ export default function CommandPage() {
             </button>
           </div>
           <div className="mt-2 flex flex-wrap gap-1.5 lg:gap-2">
-            {["/status", "/quests", "/report"].map((cmd) => (
+            {["/status", "/quests", "/tasks", "/report"].map((cmd) => (
               <button
                 key={cmd}
                 onClick={() => setInput(cmd)}
