@@ -1,97 +1,48 @@
-# Frogface Life OS — Cursor AI Rules
+# Frogface — Cursor Agent Rules
 
-## Проект
-Frogface.space — персональная Life OS с RPG-механиками, AI-агентами и голосовым вводом.
-Владелец: Сергей Орлов (Архитектор). Стек: Next.js 16, TypeScript, Tailwind CSS 4, Supabase.
+## Флоу
+```
+Архитектор (голос) → Telegram-бот → POST frogface.space/api/tasks → задача на сайте
+                                                                         ↓
+Архитектор открывает Cursor Cloud → запускает агента → агент читает tasks/{project}/ → работает → коммитит
+```
 
-## Workflow: Moltbot ↔ Cursor
+## Структура задач
+```
+tasks/
+  myreply/    ← агент MyReply
+  edison/     ← агент Edison Bar
+  frogface/   ← агент Frogface (этот репо)
+  video/      ← агент Video/YouTube
+```
 
-### Как работает мост
-1. Архитектор наговаривает идеи голосом
-2. Moltbot (AI-ассистент) структурирует поток в задачу
-3. Задача попадает в `tasks/` как .md файл ИЛИ через API `/api/tasks`
-4. Cursor читает задачу, выполняет, коммитит результат
-5. Cursor обновляет статус задачи (файл + API)
+Каждая папка содержит:
+- `AGENT.md` — контекст проекта для Cursor-агента
+- `TASK-XXX-name.md` — задачи
 
-### Формат задач в tasks/
-Каждая задача — отдельный .md файл в `tasks/`:
-- Имя: `TASK-XXX-краткое-описание.md`
-- Содержит: описание, контекст, файлы, критерии готовности
-- Статусы: pending → in_progress → done | cancelled
+## Как работать с задачей
+1. Прочитай `tasks/{project}/AGENT.md` — контекст проекта
+2. Найди задачи со статусом `pending`
+3. Выполни работу
+4. В файле задачи: `**Статус:** done` + секция `## Результат`
+5. `npx next build` (для frogface)
+6. Коммит + пуш
 
-### API для задач
-- `GET /api/tasks` — список задач (фильтры: ?status=, ?agent=, ?project=)
-- `POST /api/tasks` — создать задачу (body: {title, description, priority, project, agent})
-- `PATCH /api/tasks` — обновить задачу (body: {id, status, result})
-
-### Как Moltbot создаёт задачу для Cursor
-Через ChatGPT/OpenRouter, Moltbot может отправить HTTP-запрос:
+## API для Telegram-бота
+Бот создаёт задачи одним POST:
 ```
 POST https://frogface.space/api/tasks
-Authorization: Bearer <API_SECRET>
 {
-  "title": "Название задачи",
-  "description": "Что нужно сделать",
+  "title": "Афиша Эмберс",
+  "description": "Создать афишу для выступления",
+  "project": "edison",
   "priority": "critical",
-  "project": "myreply",
-  "agent": "cursor",
-  "files": ["src/app/page.tsx"],
-  "acceptance": ["Критерий 1", "Критерий 2"]
+  "agent": "cursor"
 }
 ```
 
-Или просто создать файл `tasks/TASK-XXX.md` и закоммитить в репо.
-
-### Приоритеты задач
-- `boss` — главная цель цепочки, максимальный XP
-- `critical` — нужно сделать срочно
-- `high` — важно, но не горит
-- `normal` — обычная задача
-- `low` — когда будет время
-
-### Проекты
-- `myreply` — AI-ответы на отзывы (приоритет #1)
-- `edison` — Edison Bar ресторан
-- `frogface` — этот дашборд Life OS
-- `video` — YouTube проект
-- `content` — контент-фабрика
-
-## Правила для Cursor
-
-### Код
-- Язык кода: TypeScript, английские имена переменных
-- UI текст: русский
-- Стиль: минималистичный, тёмная тема, RPG-нарратив
-- Коммиты: `feat:`, `fix:`, `chore:` префиксы
-- Не создавать новые проекты без одобрения
-- Фокус на Главу 1: Фундамент
-
-### Работа с задачами
-Когда Cursor берёт задачу из `tasks/`:
-1. Прочитай файл задачи (напр. `tasks/TASK-001-seo-myreply.md`)
-2. Выполни работу согласно описанию и критериям
-3. Обнови статус в файле: `**Статус:** done`
-4. Добавь секцию `## Результат` с описанием что сделано
-5. Отправь PATCH запрос для уведомления Moltbot-а:
-   ```
-   PATCH /api/tasks
-   {"id": "TASK-XXX", "status": "done", "result": "Краткое описание результата"}
-   ```
-6. Закоммить изменения
-
-### Общение с Moltbot
-Cursor может отправить любое сообщение Moltbot-у через:
-```
-POST /api/notify
-{"message": "Задача готова, протестируй пожалуйста", "from": "cursor"}
-```
-Сообщение появится в чате Moltbot-а и Command Center.
-
-### Что происходит при обновлении задачи
-- Moltbot получит уведомление в свой чат (chat_messages)
-- Запись появится в activity_log и на дашборде
-- Если настроен TASK_WEBHOOK_URL — уйдёт Telegram-уведомление
-
-### Переменные окружения для уведомлений
-- `TASK_WEBHOOK_URL` — URL вебхука (Telegram Bot API или любой HTTP endpoint)
-- `TELEGRAM_CHAT_ID` — ID чата для Telegram-уведомлений
+## Код (для frogface проекта)
+- TypeScript, английские имена
+- UI русский, тёмная тема
+- Коммиты: feat:/fix:/chore:
+- Проверяй билд перед пушем
