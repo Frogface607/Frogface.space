@@ -11,7 +11,6 @@ import {
   Volume2,
   VolumeX,
   Loader2,
-  Zap,
   Target,
   TrendingUp,
   ListTodo,
@@ -19,14 +18,12 @@ import {
   ChevronUp,
   Copy,
   Check,
-  Phone,
-  PhoneOff,
   Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useChatHistory, type ChatMsg } from "@/lib/use-chat-history";
 import { usePersistedState } from "@/lib/use-persisted-state";
-import { speak, stopSpeaking, preloadVoices, isSpeaking } from "@/lib/tts";
+import { speak, stopSpeaking, preloadVoices } from "@/lib/tts";
 import { parseActions, executeActions, listActiveQuests } from "@/lib/quest-store";
 
 function now() {
@@ -67,16 +64,17 @@ const SYSTEM_PROMPT = [
   "[TASK:CREATE|название|описание|проект|приоритет|cursor]",
 ].join("\n");
 
-type ConvoState = "idle" | "listening" | "processing" | "speaking";
+type VoiceState = "idle" | "recording" | "processing" | "speaking";
 
 export default function HQPage() {
   const [messages, setMessages, clearChat] = useChatHistory("hq", INITIAL_MESSAGES);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [convoMode, setConvoMode] = usePersistedState("ff_convo_mode", false);
-  const [convoState, setConvoState] = useState<ConvoState>("idle");
+  const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [liveTranscript, setLiveTranscript] = useState("");
+  const [recordDuration, setRecordDuration] = useState(0);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [ttsEnabled, setTtsEnabled] = usePersistedState("ff_tts", true);
   const [mana, setMana] = usePersistedState("ff_mana", 0);
   const [manaDate, setManaDate] = usePersistedState("ff_mana_date", "");
   const [showPanel, setShowPanel] = useState(false);
@@ -84,12 +82,12 @@ export default function HQPage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const silenceTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const convoModeRef = useRef(convoMode);
+  const durationTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animFrameRef = useRef<number>(0);
+  const fullTextRef = useRef("");
 
   const today = new Date().toISOString().split("T")[0];
   const manaCheckedToday = manaDate === today;
@@ -99,7 +97,6 @@ export default function HQPage() {
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
   useEffect(() => { preloadVoices(); }, []);
-  useEffect(() => { convoModeRef.current = convoMode; }, [convoMode]);
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, liveTranscript]);
@@ -116,14 +113,11 @@ export default function HQPage() {
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 256;
       analyserRef.current = analyser;
-      const source = ctx.createMediaStreamSource(stream);
-      source.connect(analyser);
-
+      ctx.createMediaStreamSource(stream).connect(analyser);
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       const tick = () => {
         analyser.getByteFrequencyData(dataArray);
-        const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-        setAudioLevel(Math.min(avg / 128, 1));
+        setAudioLevel(Math.min(dataArray.reduce((a, b) => a + b, 0) / dataArray.length / 128, 1));
         animFrameRef.current = requestAnimationFrame(tick);
       };
       tick();
@@ -133,7 +127,8 @@ export default function HQPage() {
   const stopAudioAnalyser = useCallback(() => {
     cancelAnimationFrame(animFrameRef.current);
     streamRef.current?.getTracks().forEach((t) => t.stop());
-    audioCtxRef.current?.close();
+    audioCtxRef.current?.close().catch(() => {});
+    audioCtxRef.current = null;
     setAudioLevel(0);
   }, []);
 
@@ -146,7 +141,7 @@ export default function HQPage() {
     setInput("");
     setLiveTranscript("");
     setIsTyping(true);
-    setConvoState("processing");
+    setVoiceState((s) => s === "recording" ? "processing" : s === "idle" ? "processing" : s);
 
     const botMsgId = (Date.now() + 1).toString();
 
@@ -154,26 +149,27 @@ export default function HQPage() {
       const history = messages
         .filter((m) => m.role !== "system")
         .slice(-20)
-        .map((m) => ({
-          role: m.role === "user" ? "user" as const : "assistant" as const,
-          content: m.text,
-        }));
+        .map((m) => ({ role: m.role === "user" ? "user" as const : "assistant" as const, content: m.text }));
       history.push({ role: "user", content: msg });
 
-      const activeQuests = listActiveQuests();
-      const questCtx = activeQuests.length > 0
-        ? "\n\nАктивные квесты:\n" + activeQuests.map((q, i) => `${i + 1}. [${q.priority}] ${q.title} (+${q.xp} XP)`).join("\n")
-        : "";
+      let serverContext = "";
+      try {
+        const ctxRes = await fetch(`/api/context?q=${encodeURIComponent(msg.slice(0, 200))}`);
+        if (ctxRes.ok) {
+          const ctxData = await ctxRes.json();
+          serverContext = ctxData.context || "";
+        }
+      } catch { /* context fetch failed, proceed without */ }
 
-      const voiceSuffix = convoModeRef.current
-        ? "\n\n[ГОЛОСОВОЙ РЕЖИМ. Отвечай коротко 2-4 предложения. Без маркдаун, без списков. Говори как друг.]"
-        : "";
+      const systemContent = SYSTEM_PROMPT
+        + (serverContext ? "\n\n" + serverContext : "")
+        + "\n\nОтвечай коротко и конкретно. Если спрашивают про задачи — используй контекст выше.";
 
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [{ role: "system", content: SYSTEM_PROMPT + questCtx + voiceSuffix }, ...history],
+          messages: [{ role: "system", content: systemContent }, ...history],
           model: "Claude Sonnet 4",
         }),
       });
@@ -207,30 +203,25 @@ export default function HQPage() {
         setMessages((prev) => prev.map((m) => (m.id === botMsgId ? { ...m, text: finalText } : m)));
       }
 
-      if (convoModeRef.current && finalText) {
-        setConvoState("speaking");
-        speak(finalText.replace(/\[.*?\]/g, ""), () => {
-          setConvoState("idle");
-          if (convoModeRef.current) {
-            setTimeout(() => startListening(), 300);
-          }
-        });
+      if (ttsEnabled && finalText) {
+        setVoiceState("speaking");
+        speak(finalText.replace(/\[.*?\]/g, ""), () => setVoiceState("idle"));
       } else {
-        setConvoState("idle");
+        setVoiceState("idle");
       }
     } catch (err) {
-      const errorText = err instanceof Error ? err.message : "Ошибка";
       setMessages((prev) => [
         ...prev,
-        { id: botMsgId, role: "assistant", text: `⚠️ ${errorText}`, time: now() },
+        { id: botMsgId, role: "assistant", text: `⚠️ ${err instanceof Error ? err.message : "Ошибка"}`, time: now() },
       ]);
       setIsTyping(false);
-      setConvoState("idle");
+      setVoiceState("idle");
     }
-  }, [input, isTyping, messages, setMessages]);
+  }, [input, isTyping, messages, setMessages, ttsEnabled]);
 
-  const startListening = useCallback(() => {
-    if (!hasSpeechApi) return;
+  // Dictaphone: record as long as you want, stop manually → send
+  const startRecording = useCallback(() => {
+    if (!hasSpeechApi || voiceState === "recording") return;
     stopSpeaking();
 
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -238,83 +229,66 @@ export default function HQPage() {
     recognition.lang = "ru-RU";
     recognition.interimResults = true;
     recognition.continuous = true;
-    let fullText = "";
-    let lastResultTime = Date.now();
+    fullTextRef.current = "";
 
-    setConvoState("listening");
+    setVoiceState("recording");
     setLiveTranscript("");
+    setRecordDuration(0);
     startAudioAnalyser();
 
+    durationTimerRef.current = setInterval(() => setRecordDuration((d) => d + 1), 1000);
+
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let current = "";
-      fullText = "";
+      let interim = "";
+      let final = "";
       for (let i = 0; i < event.results.length; i++) {
         const t = event.results[i][0].transcript;
-        if (event.results[i].isFinal) fullText += t + " ";
-        else current = t;
+        if (event.results[i].isFinal) final += t + " ";
+        else interim = t;
       }
-      setLiveTranscript(fullText + current);
-      lastResultTime = Date.now();
-
-      clearTimeout(silenceTimerRef.current);
-      if (fullText.trim()) {
-        silenceTimerRef.current = setTimeout(() => {
-          if (Date.now() - lastResultTime >= 1500 && fullText.trim()) {
-            recognition.stop();
-          }
-        }, 1800);
-      }
+      fullTextRef.current = final;
+      setLiveTranscript(final + interim);
     };
 
     recognition.onend = () => {
       stopAudioAnalyser();
-      clearTimeout(silenceTimerRef.current);
-      if (fullText.trim()) {
+      clearInterval(durationTimerRef.current);
+      const text = fullTextRef.current.trim();
+      if (text) {
         setLiveTranscript("");
-        sendMessage(fullText.trim());
+        sendMessage(text);
       } else {
-        setConvoState("idle");
+        setVoiceState("idle");
+        setLiveTranscript("");
       }
     };
 
     recognition.onerror = () => {
       stopAudioAnalyser();
-      setConvoState("idle");
+      clearInterval(durationTimerRef.current);
+      setVoiceState("idle");
     };
 
     recognition.start();
     recognitionRef.current = recognition;
-  }, [hasSpeechApi, sendMessage, startAudioAnalyser, stopAudioAnalyser]);
+  }, [hasSpeechApi, voiceState, sendMessage, startAudioAnalyser, stopAudioAnalyser]);
 
-  const stopListening = useCallback(() => {
+  const stopRecording = useCallback(() => {
     recognitionRef.current?.stop();
-    clearTimeout(silenceTimerRef.current);
+    clearInterval(durationTimerRef.current);
     stopAudioAnalyser();
   }, [stopAudioAnalyser]);
 
-  const toggleConvoMode = useCallback(() => {
-    if (convoMode) {
-      setConvoMode(false);
-      stopListening();
-      stopSpeaking();
-      setConvoState("idle");
-    } else {
-      setConvoMode(true);
-      startListening();
-    }
-  }, [convoMode, setConvoMode, startListening, stopListening]);
-
   const handleMicTap = useCallback(() => {
-    if (convoState === "listening") {
-      stopListening();
-    } else if (convoState === "speaking") {
+    if (voiceState === "recording") {
+      stopRecording();
+    } else if (voiceState === "speaking") {
       stopSpeaking();
-      setConvoState("idle");
-      if (convoMode) setTimeout(() => startListening(), 300);
+      setVoiceState("idle");
     } else {
-      startListening();
+      startRecording();
     }
-  }, [convoState, convoMode, startListening, stopListening]);
+  }, [voiceState, startRecording, stopRecording]);
 
   const rp = report as { player?: { level?: number; xp?: number; gold?: number; mana?: number }; quests?: { active?: number }; content?: { pending_review?: number }; cursor_tasks?: { pending?: number } } | null;
 
@@ -323,8 +297,8 @@ export default function HQPage() {
       {/* Top bar */}
       <div className="flex items-center justify-between border-b border-border bg-bg-card px-4 py-2">
         <div className="flex items-center gap-2.5">
-          <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg", convoMode ? "bg-xp/20" : "bg-accent/20")}>
-            {convoMode ? <Radio className="h-3.5 w-3.5 text-xp" /> : <Bot className="h-3.5 w-3.5 text-accent" />}
+          <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg", voiceState === "recording" ? "bg-hp/20" : voiceState === "speaking" ? "bg-xp/20" : "bg-accent/20")}>
+            {voiceState === "recording" ? <Radio className="h-3.5 w-3.5 text-hp animate-pulse" /> : voiceState === "speaking" ? <Volume2 className="h-3.5 w-3.5 text-xp animate-pulse" /> : <Bot className="h-3.5 w-3.5 text-accent" />}
           </div>
           <div>
             <h1 className="text-xs font-semibold text-text-bright">{getGreeting()}, Архитектор</h1>
@@ -384,86 +358,58 @@ export default function HQPage() {
 
           {/* Voice + Input area */}
           <div className="border-t border-border bg-bg-card">
-            {/* Conversation mode big button area */}
-            {convoMode && (
-              <div className="flex flex-col items-center gap-3 px-4 py-5">
-                {convoState === "speaking" && (
-                  <div className="flex items-center gap-2 text-xs text-xp">
-                    <Volume2 className="h-3.5 w-3.5 animate-pulse" />
-                    Moltbot говорит...
+            {/* Dictaphone recording area */}
+            {voiceState === "recording" && (
+              <div className="flex flex-col items-center gap-3 px-4 pt-4 pb-2">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="absolute inset-0 rounded-full bg-hp/10 transition-all duration-100" style={{ transform: `scale(${1 + audioLevel * 0.8})`, opacity: 0.5 }} />
+                    <div className="relative h-3 w-3 rounded-full bg-hp animate-pulse" />
+                  </div>
+                  <span className="font-mono text-sm text-hp">{Math.floor(recordDuration / 60)}:{(recordDuration % 60).toString().padStart(2, "0")}</span>
+                  <span className="text-xs text-text-dim">Записываю... ходи и говори</span>
+                </div>
+                {liveTranscript && (
+                  <div className="w-full max-w-lg rounded-lg border border-border/30 bg-bg-deep/50 px-4 py-2">
+                    <p className="text-xs text-text-dim/70 leading-relaxed">{liveTranscript}</p>
                   </div>
                 )}
-
-                {/* Big mic button with audio level ring */}
-                <div className="relative">
-                  {/* Audio level ring */}
-                  <div
-                    className={cn(
-                      "absolute inset-0 rounded-full transition-all duration-100",
-                      convoState === "listening" && "bg-accent/10",
-                      convoState === "speaking" && "bg-xp/10",
-                      convoState === "processing" && "bg-gold/10",
-                    )}
-                    style={{
-                      transform: `scale(${1 + audioLevel * 0.6})`,
-                      opacity: convoState === "listening" ? 0.6 : 0,
-                    }}
-                  />
-                  <button
-                    onClick={handleMicTap}
-                    disabled={convoState === "processing"}
-                    className={cn(
-                      "relative flex h-20 w-20 items-center justify-center rounded-full transition-all",
-                      convoState === "listening" && "bg-accent/20 text-accent shadow-lg shadow-accent/20 scale-110",
-                      convoState === "speaking" && "bg-xp/20 text-xp",
-                      convoState === "processing" && "bg-gold/20 text-gold",
-                      convoState === "idle" && "bg-bg-deep text-text-dim hover:bg-accent/10 hover:text-accent hover:scale-105",
-                    )}
-                  >
-                    {convoState === "processing" ? (
-                      <Loader2 className="h-8 w-8 animate-spin" />
-                    ) : convoState === "listening" ? (
-                      <Mic className="h-8 w-8" />
-                    ) : convoState === "speaking" ? (
-                      <Volume2 className="h-8 w-8" />
-                    ) : (
-                      <Mic className="h-8 w-8" />
-                    )}
-                  </button>
-                </div>
-
-                <p className="text-[10px] text-text-dim">
-                  {convoState === "listening" ? "Говорите... пауза = отправка" :
-                   convoState === "processing" ? "Обрабатываю..." :
-                   convoState === "speaking" ? "Нажмите чтобы прервать" :
-                   "Нажмите чтобы говорить"}
-                </p>
-
-                <button onClick={toggleConvoMode} className="flex items-center gap-1.5 rounded-lg bg-hp/10 px-3 py-1.5 text-xs text-hp hover:bg-hp/20">
-                  <PhoneOff className="h-3 w-3" /> Завершить разговор
+                <button
+                  onClick={stopRecording}
+                  className="flex items-center gap-2 rounded-xl bg-hp/20 px-6 py-3 text-sm font-medium text-hp transition-all hover:bg-hp/30 hover:scale-105"
+                >
+                  <MicOff className="h-5 w-5" />
+                  Стоп — отправить
                 </button>
               </div>
             )}
 
-            {/* Text input + voice toggle */}
-            <div className={cn("p-3", convoMode && "border-t border-border/50")}>
+            {voiceState === "speaking" && (
+              <div className="flex items-center justify-center gap-3 px-4 py-3">
+                <Volume2 className="h-4 w-4 animate-pulse text-xp" />
+                <span className="text-xs text-xp">Moltbot говорит...</span>
+                <button onClick={() => { stopSpeaking(); setVoiceState("idle"); }} className="rounded px-2 py-0.5 text-[10px] text-text-dim hover:bg-bg-hover">стоп</button>
+              </div>
+            )}
+
+            {/* Main input bar */}
+            <div className="p-3">
               <div className="flex items-center gap-2">
-                {!convoMode && hasSpeechApi && (
+                {hasSpeechApi && (
                   <button
-                    onClick={toggleConvoMode}
-                    className="flex items-center gap-1.5 rounded-xl bg-accent/10 px-3 py-2.5 text-accent transition-all hover:bg-accent/20 hover:scale-105"
-                    title="Голосовой режим"
+                    onClick={handleMicTap}
+                    disabled={voiceState === "processing"}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-xl px-3 py-2.5 transition-all",
+                      voiceState === "recording" ? "bg-hp/20 text-hp animate-pulse" :
+                      voiceState === "processing" ? "bg-gold/20 text-gold" :
+                      "bg-accent/10 text-accent hover:bg-accent/20 hover:scale-105",
+                    )}
+                    title={voiceState === "recording" ? "Стоп" : "Диктофон"}
                   >
-                    <Phone className="h-5 w-5" />
-                  </button>
-                )}
-                {!convoMode && hasSpeechApi && (
-                  <button
-                    onClick={() => { if (convoState !== "listening") startListening(); else stopListening(); }}
-                    className={cn("rounded-xl p-2.5 transition-all", convoState === "listening" ? "bg-hp/20 text-hp animate-pulse" : "text-text-dim hover:bg-bg-hover hover:text-accent")}
-                    title="Голосовой ввод"
-                  >
-                    {convoState === "listening" ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                    {voiceState === "processing" ? <Loader2 className="h-5 w-5 animate-spin" /> :
+                     voiceState === "recording" ? <MicOff className="h-5 w-5" /> :
+                     <Mic className="h-5 w-5" />}
                   </button>
                 )}
                 <input
@@ -471,20 +417,21 @@ export default function HQPage() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                  placeholder={convoMode ? "или напишите..." : "Написать Moltbot..."}
+                  placeholder="Написать Moltbot..."
                   className="flex-1 rounded-xl border border-border bg-bg-deep px-4 py-2.5 text-sm text-text placeholder:text-text-dim/40 focus:border-accent/50 focus:outline-none"
                 />
                 <button onClick={() => sendMessage()} disabled={!input.trim() || isTyping} className="rounded-xl bg-accent px-4 py-2.5 text-white hover:bg-accent-dim disabled:opacity-30">
                   <Send className="h-4 w-4" />
                 </button>
               </div>
-              {!convoMode && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {["/status", "/quests", "/report", "генерируй контент"].map((cmd) => (
-                    <button key={cmd} onClick={() => setInput(cmd)} className="rounded-md border border-border px-2 py-1 text-[10px] text-text-dim hover:border-accent/50 hover:text-accent">{cmd}</button>
-                  ))}
-                </div>
-              )}
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {["/status", "/quests", "/report", "где мои задачи?", "генерируй контент"].map((cmd) => (
+                  <button key={cmd} onClick={() => setInput(cmd)} className="rounded-md border border-border px-2 py-1 text-[10px] text-text-dim hover:border-accent/50 hover:text-accent">{cmd}</button>
+                ))}
+                <button onClick={() => setTtsEnabled(!ttsEnabled)} className={cn("ml-auto rounded p-1", ttsEnabled ? "text-xp" : "text-text-dim/30")} title="Озвучка ответов">
+                  {ttsEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+                </button>
+              </div>
             </div>
           </div>
         </div>
