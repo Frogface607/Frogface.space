@@ -219,7 +219,9 @@ export default function HQPage() {
     }
   }, [input, isTyping, messages, setMessages, ttsEnabled]);
 
-  // Dictaphone: record as long as you want, stop manually → send
+  const stoppingRef = useRef(false);
+  const lastFinalIdxRef = useRef(0);
+
   const startRecording = useCallback(() => {
     if (!hasSpeechApi || voiceState === "recording") return;
     stopSpeaking();
@@ -230,6 +232,8 @@ export default function HQPage() {
     recognition.interimResults = true;
     recognition.continuous = true;
     fullTextRef.current = "";
+    lastFinalIdxRef.current = 0;
+    stoppingRef.current = false;
 
     setVoiceState("recording");
     setLiveTranscript("");
@@ -240,17 +244,32 @@ export default function HQPage() {
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interim = "";
-      let final = "";
-      for (let i = 0; i < event.results.length; i++) {
-        const t = event.results[i][0].transcript;
-        if (event.results[i].isFinal) final += t + " ";
-        else interim = t;
+
+      if (event.results.length < lastFinalIdxRef.current) {
+        lastFinalIdxRef.current = 0;
       }
-      fullTextRef.current = final;
-      setLiveTranscript(final + interim);
+
+      for (let i = lastFinalIdxRef.current; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          fullTextRef.current += t + " ";
+          lastFinalIdxRef.current = i + 1;
+        } else {
+          interim = t;
+        }
+      }
+
+      setLiveTranscript(fullTextRef.current + interim);
     };
 
     recognition.onend = () => {
+      if (!stoppingRef.current && fullTextRef.current.length < 50000) {
+        try {
+          recognition.start();
+          return;
+        } catch { /* can't restart */ }
+      }
+
       stopAudioAnalyser();
       clearInterval(durationTimerRef.current);
       const text = fullTextRef.current.trim();
@@ -263,7 +282,8 @@ export default function HQPage() {
       }
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (e) => {
+      if ((e as { error?: string }).error === "no-speech") return;
       stopAudioAnalyser();
       clearInterval(durationTimerRef.current);
       setVoiceState("idle");
@@ -274,6 +294,7 @@ export default function HQPage() {
   }, [hasSpeechApi, voiceState, sendMessage, startAudioAnalyser, stopAudioAnalyser]);
 
   const stopRecording = useCallback(() => {
+    stoppingRef.current = true;
     recognitionRef.current?.stop();
     clearInterval(durationTimerRef.current);
     stopAudioAnalyser();
