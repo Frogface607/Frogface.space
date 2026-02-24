@@ -220,52 +220,40 @@ export default function HQPage() {
   }, [input, isTyping, messages, setMessages, ttsEnabled]);
 
   const stoppingRef = useRef(false);
-  const lastFinalIdxRef = useRef(0);
+  const accumulatedRef = useRef("");
 
-  const startRecording = useCallback(() => {
-    if (!hasSpeechApi || voiceState === "recording") return;
-    stopSpeaking();
-
+  const launchRecognition = useCallback(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SR();
     recognition.lang = "ru-RU";
     recognition.interimResults = true;
     recognition.continuous = true;
-    fullTextRef.current = "";
-    lastFinalIdxRef.current = 0;
-    stoppingRef.current = false;
 
-    setVoiceState("recording");
-    setLiveTranscript("");
-    setRecordDuration(0);
-    startAudioAnalyser();
-
-    durationTimerRef.current = setInterval(() => setRecordDuration((d) => d + 1), 1000);
+    let sessionFinal = "";
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
+      sessionFinal = "";
       let interim = "";
-
-      if (event.results.length < lastFinalIdxRef.current) {
-        lastFinalIdxRef.current = 0;
-      }
-
-      for (let i = lastFinalIdxRef.current; i < event.results.length; i++) {
-        const t = event.results[i][0].transcript;
+      for (let i = 0; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
-          fullTextRef.current += t + " ";
-          lastFinalIdxRef.current = i + 1;
+          sessionFinal += event.results[i][0].transcript + " ";
         } else {
-          interim = t;
+          interim = event.results[i][0].transcript;
         }
       }
-
+      fullTextRef.current = accumulatedRef.current + sessionFinal;
       setLiveTranscript(fullTextRef.current + interim);
     };
 
     recognition.onend = () => {
-      if (!stoppingRef.current && fullTextRef.current.length < 50000) {
+      accumulatedRef.current += sessionFinal;
+      fullTextRef.current = accumulatedRef.current;
+
+      if (!stoppingRef.current) {
         try {
-          recognition.start();
+          const next = launchRecognition();
+          recognitionRef.current = next;
+          next.start();
           return;
         } catch { /* can't restart */ }
       }
@@ -283,15 +271,36 @@ export default function HQPage() {
     };
 
     recognition.onerror = (e) => {
-      if ((e as { error?: string }).error === "no-speech") return;
+      const err = (e as { error?: string }).error;
+      if (err === "no-speech" || err === "aborted") return;
+      stoppingRef.current = true;
       stopAudioAnalyser();
       clearInterval(durationTimerRef.current);
       setVoiceState("idle");
     };
 
+    return recognition;
+  }, [sendMessage, stopAudioAnalyser]);
+
+  const startRecording = useCallback(() => {
+    if (!hasSpeechApi || voiceState === "recording") return;
+    stopSpeaking();
+
+    fullTextRef.current = "";
+    accumulatedRef.current = "";
+    stoppingRef.current = false;
+
+    setVoiceState("recording");
+    setLiveTranscript("");
+    setRecordDuration(0);
+    startAudioAnalyser();
+
+    durationTimerRef.current = setInterval(() => setRecordDuration((d) => d + 1), 1000);
+
+    const recognition = launchRecognition();
     recognition.start();
     recognitionRef.current = recognition;
-  }, [hasSpeechApi, voiceState, sendMessage, startAudioAnalyser, stopAudioAnalyser]);
+  }, [hasSpeechApi, voiceState, launchRecognition, startAudioAnalyser]);
 
   const stopRecording = useCallback(() => {
     stoppingRef.current = true;
