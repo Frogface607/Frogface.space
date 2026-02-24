@@ -2,682 +2,614 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Zap,
-  TrendingUp,
-  Target,
-  Clock,
-  Flame,
-  Trophy,
-  CheckCircle2,
-  Circle,
-  Plus,
+  Send,
   Mic,
   MicOff,
+  Bot,
+  User,
+  Sparkles,
+  Volume2,
+  VolumeX,
   Loader2,
+  Zap,
+  Target,
+  TrendingUp,
+  ListTodo,
   ChevronDown,
   ChevronUp,
-  Maximize2,
-  Minimize2,
-  Bot,
-  Database,
-  Smartphone,
-  SkipForward,
-  Calendar,
+  Copy,
+  Check,
+  Phone,
+  PhoneOff,
+  Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useChatHistory, type ChatMsg } from "@/lib/use-chat-history";
 import { usePersistedState } from "@/lib/use-persisted-state";
+import { speak, stopSpeaking, preloadVoices, isSpeaking } from "@/lib/tts";
+import { parseActions, executeActions, listActiveQuests } from "@/lib/quest-store";
 
-interface Quest {
-  id: string;
-  title: string;
-  project: string;
-  xp: number;
-  priority: "normal" | "critical" | "boss";
-  progress: number;
-  done: boolean;
+function now() {
+  return new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 }
-
-interface LogItem {
-  id: string;
-  time: string;
-  text: string;
-  type: "story" | "achievement" | "gold" | "xp" | "log" | "voice";
-}
-
-const INITIAL_QUESTS: Quest[] = [
-  { id: "q1", title: "Первые 10 платящих на MyReply", project: "MyReply", xp: 800, priority: "boss", progress: 10, done: false },
-  { id: "q2", title: "Запуск сайта Edison Bar — 10 дней", project: "Edison", xp: 500, priority: "boss", progress: 30, done: false },
-  { id: "q3", title: "Съёмки «Идущий к руке» (ср-чт-пт)", project: "YouTube", xp: 300, priority: "critical", progress: 0, done: false },
-  { id: "q4", title: "Промокоды MyReply 7 дней — раздать своим", project: "MyReply", xp: 200, priority: "critical", progress: 0, done: false },
-  { id: "q5", title: "Планёрка с Машей (стратегия Edison)", project: "Edison", xp: 150, priority: "critical", progress: 0, done: false },
-  { id: "q6", title: "Пост soft launch MyReply от Frogface-бота", project: "MyReply", xp: 150, priority: "critical", progress: 0, done: false },
-  { id: "q7", title: "Допилить HTTP-мост OpenClaw → frogface.space", project: "Frogface", xp: 200, priority: "critical", progress: 80, done: false },
-  { id: "q8", title: "UGC-конкурс «самый трешовый отзыв»", project: "MyReply", xp: 150, priority: "normal", progress: 0, done: false },
-  { id: "q9", title: "Freepik Pipeline: batch вывесок Edison", project: "Edison", xp: 100, priority: "normal", progress: 0, done: false },
-  { id: "q10", title: "Добавить OPENCLAW_URL + TOKEN в Vercel", project: "Frogface", xp: 100, priority: "critical", progress: 0, done: false },
-];
-
-const INITIAL_LOG: LogItem[] = [
-  { id: "d1k", time: "День 1, ночь", text: "OpenClaw Gateway поднят на VPS Jino. Probe: OK. HTTP-мост создан.", type: "achievement" },
-  { id: "d1j", time: "День 1, ночь", text: "Moltbot управляет квестами из чата — создавай и завершай голосом.", type: "achievement" },
-  { id: "d1i", time: "День 1, вечер", text: "Голосовой режим: микрофон + TTS ответы на русском. Замена ChatGPT Voice.", type: "achievement" },
-  { id: "d1h", time: "День 1, вечер", text: "Интерактивная Летопись: Game Master ведёт ритуал закрытия дня.", type: "achievement" },
-  { id: "d1g", time: "День 1, вечер", text: "Zen Mode + Мана чек-ин + Голосовой Поток — три новых механики.", type: "achievement" },
-  { id: "d1f", time: "День 1, день", text: "OpenClaw интеграция: код готов, VPS настроен, осталось допилить мост.", type: "xp" },
-  { id: "d1e", time: "День 1, день", text: "8 AI-агентов с персональными промптами и полным контекстом.", type: "xp" },
-  { id: "d1d", time: "День 1, день", text: "PWA установка + мобильная вёрстка на всех страницах.", type: "achievement" },
-  { id: "d1c", time: "День 1, день", text: "OpenRouter: живые AI-ответы вместо заглушек.", type: "achievement" },
-  { id: "d1b", time: "День 1, день", text: "API endpoints для Custom GPT Actions.", type: "xp" },
-  { id: "d1a", time: "День 1, утро", text: "Frogface.space построен с нуля. Глава 1 начинается.", type: "story" },
-];
 
 const MANA_LABELS = ["", "Пустой", "Тяжело", "Норм", "Хорошо", "Огонь"];
 const MANA_COLORS = ["", "text-hp", "text-hp", "text-gold", "text-xp", "text-xp"];
 
-function getTimeOfDay() {
+function getGreeting() {
   const h = new Date().getHours();
-  if (h < 6) return "night";
-  if (h < 12) return "morning";
-  if (h < 18) return "day";
-  return "evening";
+  if (h < 6) return "Ночная смена";
+  if (h < 12) return "Доброе утро";
+  if (h < 18) return "Добрый день";
+  return "Добрый вечер";
 }
 
-function getGreeting() {
-  const tod = getTimeOfDay();
-  if (tod === "morning") return "Доброе утро, Архитектор";
-  if (tod === "day") return "Добрый день, Архитектор";
-  if (tod === "evening") return "Добрый вечер, Архитектор";
-  return "Ночная смена, Архитектор";
-}
+const INITIAL_MESSAGES: ChatMsg[] = [
+  {
+    id: "greeting",
+    role: "assistant",
+    text: `${getGreeting()}, Архитектор. Moltbot на связи.\n\nГоворите голосом или пишите — я слушаю.`,
+    time: now(),
+  },
+];
+
+const SYSTEM_PROMPT = [
+  "Ты — Moltbot, операционный директор Frogface Studio.",
+  "Архитектор — Сергей. Креативный директор. Ценности: свобода + комфорт. Таиланд.",
+  "Проекты: MyReply (AI-ответы на отзывы, MRR 178K₽→500K), Edison Bar (ресторан Иркутск), «Идущий к руке» (YouTube), Frogface.space.",
+  "Глава 1: Фундамент, 30-дневный спринт.",
+  "Стиль: дружелюбный, лаконичный, RPG-нарратив. Русский.",
+  "",
+  "КОМАНДЫ:",
+  "[QUEST:CREATE|название|проект|приоритет|xp]",
+  "[QUEST:COMPLETE|часть названия]",
+  "[QUEST:LIST]",
+  "[TASK:CREATE|название|описание|проект|приоритет|cursor]",
+].join("\n");
+
+type ConvoState = "idle" | "listening" | "processing" | "speaking";
 
 export default function HQPage() {
-  const [quests, setQuests] = usePersistedState("ff_hq_quests", INITIAL_QUESTS);
-  const [log, setLog] = usePersistedState("ff_hq_log", INITIAL_LOG);
+  const [messages, setMessages, clearChat] = useChatHistory("hq", INITIAL_MESSAGES);
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [convoMode, setConvoMode] = usePersistedState("ff_convo_mode", false);
+  const [convoState, setConvoState] = useState<ConvoState>("idle");
+  const [liveTranscript, setLiveTranscript] = useState("");
+  const [audioLevel, setAudioLevel] = useState(0);
   const [mana, setMana] = usePersistedState("ff_mana", 0);
   const [manaDate, setManaDate] = usePersistedState("ff_mana_date", "");
-  const [zenMode, setZenMode] = usePersistedState("ff_zen", true);
-  const [logInput, setLogInput] = useState("");
+  const [showPanel, setShowPanel] = useState(false);
+  const [report, setReport] = useState<Record<string, unknown> | null>(null);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const convoModeRef = useRef(convoMode);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animFrameRef = useRef<number>(0);
 
   const today = new Date().toISOString().split("T")[0];
   const manaCheckedToday = manaDate === today;
 
-  const activeQuests = quests.filter((q) => !q.done);
-  const topQuest = activeQuests.sort((a, b) => {
-    const p = { boss: 0, critical: 1, normal: 2 };
-    return p[a.priority] - p[b.priority];
-  })[0];
-  const nextQuests = activeQuests.filter((q) => q.id !== topQuest?.id).slice(0, 2);
+  const hasSpeechApi =
+    typeof window !== "undefined" &&
+    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
-  const toggleQuest = (id: string) => {
-    setQuests((prev) =>
-      prev.map((q) => {
-        if (q.id !== id) return q;
-        const done = !q.done;
-        if (done) {
-          setLog((l) => [
-            { id: Date.now().toString(), time: "сейчас", text: `Квест выполнен: ${q.title} (+${q.xp} XP)`, type: "xp" },
-            ...l,
-          ]);
-        }
-        return { ...q, done, progress: done ? 100 : q.progress };
-      }),
-    );
-  };
+  useEffect(() => { preloadVoices(); }, []);
+  useEffect(() => { convoModeRef.current = convoMode; }, [convoMode]);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, liveTranscript]);
+  useEffect(() => {
+    fetch("/api/report").then((r) => r.json()).then(setReport).catch(() => {});
+  }, []);
 
-  const checkMana = (val: number) => {
-    setMana(val);
-    setManaDate(today);
-    setLog((prev) => [
-      { id: Date.now().toString(), time: "сейчас", text: `Мана: ${val}/5 — ${MANA_LABELS[val]}`, type: "log" },
-      ...prev,
-    ]);
-  };
+  const startAudioAnalyser = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const ctx = new AudioContext();
+      audioCtxRef.current = ctx;
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      analyserRef.current = analyser;
+      const source = ctx.createMediaStreamSource(stream);
+      source.connect(analyser);
 
-  const addLogEntry = () => {
-    if (!logInput.trim()) return;
-    setLog((prev) => [
-      { id: Date.now().toString(), time: "сейчас", text: logInput, type: "log" },
-      ...prev,
-    ]);
-    setLogInput("");
-  };
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteFrequencyData(dataArray);
+        const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+        setAudioLevel(Math.min(avg / 128, 1));
+        animFrameRef.current = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch { /* mic denied */ }
+  }, []);
 
-  const completedXp = quests.filter((q) => q.done).reduce((s, q) => s + q.xp, 0);
+  const stopAudioAnalyser = useCallback(() => {
+    cancelAnimationFrame(animFrameRef.current);
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    audioCtxRef.current?.close();
+    setAudioLevel(0);
+  }, []);
 
-  // ─── ZEN MODE ─────────────────────────────────────────────
-  if (zenMode) {
-    return (
-      <div className="animate-fade-in flex min-h-[80vh] flex-col items-center justify-center px-4">
-        <p className="mb-1 text-sm text-text-dim">{getGreeting()}</p>
+  const sendMessage = useCallback(async (text?: string) => {
+    const msg = text || input.trim();
+    if (!msg || isTyping) return;
 
-        {!manaCheckedToday ? (
-          <ManaCheckIn onCheck={checkMana} />
-        ) : (
-          <>
-            <div className="mb-6 flex items-center gap-2">
-              <Zap className={cn("h-4 w-4", MANA_COLORS[mana])} />
-              <span className={cn("text-sm font-medium", MANA_COLORS[mana])}>
-                Мана {mana}/5 — {MANA_LABELS[mana]}
-              </span>
-            </div>
+    const userMsg: ChatMsg = { id: Date.now().toString(), role: "user", text: msg, time: now() };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setLiveTranscript("");
+    setIsTyping(true);
+    setConvoState("processing");
 
-            {topQuest ? (
-              <div className="w-full max-w-md">
-                <p className="mb-2 text-center text-[10px] font-medium uppercase tracking-widest text-text-dim">
-                  Сейчас
-                </p>
-                <div className="rounded-2xl border border-accent/30 bg-bg-card p-6 text-center">
-                  <div className={cn(
-                    "mx-auto mb-3 inline-flex rounded-full px-3 py-1 text-[10px] font-medium",
-                    topQuest.priority === "boss" ? "bg-gold/20 text-gold" :
-                    topQuest.priority === "critical" ? "bg-hp/20 text-hp" : "bg-mana/20 text-mana",
-                  )}>
-                    {topQuest.priority === "boss" ? "БОСС" : topQuest.priority === "critical" ? "КРИТ" : "обычный"}
-                    {" · "}{topQuest.project}
-                  </div>
-                  <h2 className="text-lg font-bold text-text-bright">{topQuest.title}</h2>
-                  <p className="mt-1 text-xs text-xp">+{topQuest.xp} XP</p>
+    const botMsgId = (Date.now() + 1).toString();
 
-                  {topQuest.progress > 0 && (
-                    <div className="mx-auto mt-4 h-1.5 w-48 rounded-full bg-bg-deep">
-                      <div
-                        className="h-full rounded-full bg-accent transition-all"
-                        style={{ width: `${topQuest.progress}%` }}
-                      />
-                    </div>
-                  )}
+    try {
+      const history = messages
+        .filter((m) => m.role !== "system")
+        .slice(-20)
+        .map((m) => ({
+          role: m.role === "user" ? "user" as const : "assistant" as const,
+          content: m.text,
+        }));
+      history.push({ role: "user", content: msg });
 
-                  <div className="mt-5 flex items-center justify-center gap-3">
-                    <button
-                      onClick={() => toggleQuest(topQuest.id)}
-                      className="rounded-xl bg-xp/20 px-6 py-2.5 text-sm font-medium text-xp transition-colors hover:bg-xp/30"
-                    >
-                      <CheckCircle2 className="mr-1.5 inline h-4 w-4" />
-                      Готово
-                    </button>
-                    <button
-                      onClick={() => {
-                        const idx = quests.findIndex((q) => q.id === topQuest.id);
-                        if (idx >= 0) {
-                          setQuests((prev) => {
-                            const arr = [...prev];
-                            arr.push(arr.splice(idx, 1)[0]);
-                            return arr;
-                          });
-                        }
-                      }}
-                      className="rounded-xl bg-bg-deep px-4 py-2.5 text-sm text-text-dim transition-colors hover:bg-bg-hover hover:text-text"
-                    >
-                      <SkipForward className="mr-1 inline h-4 w-4" />
-                      Потом
-                    </button>
-                  </div>
-                </div>
+      const activeQuests = listActiveQuests();
+      const questCtx = activeQuests.length > 0
+        ? "\n\nАктивные квесты:\n" + activeQuests.map((q, i) => `${i + 1}. [${q.priority}] ${q.title} (+${q.xp} XP)`).join("\n")
+        : "";
 
-                {nextQuests.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-center text-[10px] font-medium uppercase tracking-widest text-text-dim">Далее</p>
-                    {nextQuests.map((q) => (
-                      <div key={q.id} className="flex items-center gap-2 rounded-lg border border-border/30 bg-bg-deep/30 px-3 py-2">
-                        <Circle className="h-3.5 w-3.5 shrink-0 text-text-dim/30" />
-                        <span className="text-xs text-text-dim">{q.title}</span>
-                        <span className="ml-auto text-[10px] text-text-dim/50">{q.project}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+      const voiceSuffix = convoModeRef.current
+        ? "\n\n[ГОЛОСОВОЙ РЕЖИМ. Отвечай коротко 2-4 предложения. Без маркдаун, без списков. Говори как друг.]"
+        : "";
 
-                <VoiceStream
-                  onResult={(text) => {
-                    setLog((prev) => [
-                      { id: Date.now().toString(), time: "сейчас", text, type: "voice" },
-                      ...prev,
-                    ]);
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="text-center">
-                <Trophy className="mx-auto h-12 w-12 text-gold" />
-                <p className="mt-3 text-lg font-bold text-text-bright">Все квесты выполнены!</p>
-                <p className="text-sm text-text-dim">+{completedXp} XP за сегодня. Ты — легенда.</p>
-              </div>
-            )}
-          </>
-        )}
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "system", content: SYSTEM_PROMPT + questCtx + voiceSuffix }, ...history],
+          model: "Claude Sonnet 4",
+        }),
+      });
 
-        <button
-          onClick={() => setZenMode(false)}
-          className="mt-8 flex items-center gap-1.5 text-[10px] text-text-dim/50 transition-colors hover:text-text-dim"
-        >
-          <Maximize2 className="h-3 w-3" />
-          Полный дашборд
-        </button>
-      </div>
-    );
-  }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error([err.error, err.details].filter(Boolean).join(" | "));
+      }
 
-  // ─── FULL DASHBOARD ───────────────────────────────────────
-  return (
-    <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-text-bright">{getGreeting()}</h1>
-          <p className="mt-1 text-sm text-text-dim">
-            Глава 1 — &quot;Фундамент&quot; · Февраль 2026
-          </p>
-        </div>
-        <button
-          onClick={() => setZenMode(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[10px] text-text-dim transition-colors hover:border-accent/50 hover:text-accent"
-        >
-          <Minimize2 className="h-3 w-3" />
-          Zen
-        </button>
-      </div>
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let full = "";
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-        <StatCard
-          icon={<TrendingUp className="h-5 w-5 text-gold" />}
-          label="Золото (MRR)"
-          value="178K ₽"
-          delta="+12% за месяц"
-          accent="border-gold/30"
-        />
-        <div
-          className="cursor-pointer rounded-xl border border-mana/30 bg-bg-card p-4 transition-colors hover:border-mana/50"
-          onClick={() => { setManaDate(""); }}
-        >
-          <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-mana" />
-            <span className="text-xs text-text-dim">Мана</span>
-          </div>
-          <p className="mt-2 text-xl font-bold text-text-bright">
-            {manaCheckedToday ? `${mana}/5` : "—"}
-          </p>
-          <p className="mt-1 text-[10px] text-text-dim">
-            {manaCheckedToday ? MANA_LABELS[mana] : "Нажми для чек-ина"}
-          </p>
-        </div>
-        <StatCard
-          icon={<Flame className="h-5 w-5 text-xp" />}
-          label="XP сегодня"
-          value={`+${completedXp}`}
-          delta={`${quests.filter((q) => q.done).length} завершено`}
-          accent="border-xp/30"
-        />
-        <StatCard
-          icon={<Target className="h-5 w-5 text-accent" />}
-          label="Активные"
-          value={String(activeQuests.length)}
-          delta={`из ${quests.length} квестов`}
-          accent="border-accent/30"
-        />
-      </div>
+      setMessages((prev) => [...prev, { id: botMsgId, role: "assistant", text: "", time: now() }]);
+      setIsTyping(false);
 
-      <VoiceStream
-        onResult={(text) => {
-          setLog((prev) => [
-            { id: Date.now().toString(), time: "сейчас", text, type: "voice" },
-            ...prev,
-          ]);
-        }}
-      />
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        full += decoder.decode(value, { stream: true });
+        const snapshot = full;
+        setMessages((prev) => prev.map((m) => (m.id === botMsgId ? { ...m, text: snapshot } : m)));
+      }
 
-      <div className="grid gap-4 lg:grid-cols-3 lg:gap-6">
-        <div className="lg:col-span-2 rounded-xl border border-border bg-bg-card p-4 lg:p-5">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-bright">
-            <Target className="h-4 w-4 text-accent" />
-            Активные квесты
-          </h2>
-          <div className="space-y-3">
-            {quests.map((q) => (
-              <QuestRow key={q.id} quest={q} onToggle={toggleQuest} />
-            ))}
-          </div>
-        </div>
+      const actions = parseActions(full);
+      let finalText = full;
+      if (actions.length > 0) {
+        const results = await executeActions(actions);
+        const cleaned = full.replace(/\[QUEST:.*?\]/g, "").replace(/\[TASK:CREATE\|.*?\]/g, "").trim();
+        finalText = cleaned + (results.length ? "\n\n" + results.join("\n") : "");
+        setMessages((prev) => prev.map((m) => (m.id === botMsgId ? { ...m, text: finalText } : m)));
+      }
 
-        <div className="rounded-xl border border-border bg-bg-card p-4 lg:p-5">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-bright">
-            <Trophy className="h-4 w-4 text-gold" />
-            Летопись
-          </h2>
+      if (convoModeRef.current && finalText) {
+        setConvoState("speaking");
+        speak(finalText.replace(/\[.*?\]/g, ""), () => {
+          setConvoState("idle");
+          if (convoModeRef.current) {
+            setTimeout(() => startListening(), 300);
+          }
+        });
+      } else {
+        setConvoState("idle");
+      }
+    } catch (err) {
+      const errorText = err instanceof Error ? err.message : "Ошибка";
+      setMessages((prev) => [
+        ...prev,
+        { id: botMsgId, role: "assistant", text: `⚠️ ${errorText}`, time: now() },
+      ]);
+      setIsTyping(false);
+      setConvoState("idle");
+    }
+  }, [input, isTyping, messages, setMessages]);
 
-          <div className="mb-3 flex gap-2">
-            <input
-              type="text"
-              value={logInput}
-              onChange={(e) => setLogInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addLogEntry()}
-              placeholder="Записать в лог..."
-              className="flex-1 rounded-lg border border-border bg-bg-deep px-3 py-1.5 text-xs text-text placeholder:text-text-dim/40 focus:border-accent/50 focus:outline-none"
-            />
-            <button
-              onClick={addLogEntry}
-              disabled={!logInput.trim()}
-              className="rounded-lg bg-accent/20 px-2 text-accent transition-colors hover:bg-accent/30 disabled:opacity-30"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
-            {log.map((entry) => (
-              <LogEntry key={entry.id} entry={entry} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-border bg-bg-card p-4 lg:p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-text-bright">
-              <Clock className="h-4 w-4 text-mana" />
-              Глава 1: Фундамент
-            </h2>
-            <p className="mt-1 text-xs text-text-dim">
-              30-дневный спринт · Построить базу, запустить продукты, достичь 500K Gold
-            </p>
-          </div>
-          <div className="sm:text-right">
-            <p className="text-2xl font-bold text-accent">День 1</p>
-            <p className="text-[10px] text-text-dim">осталось 29 дней</p>
-          </div>
-        </div>
-        <div className="mt-4 h-2 rounded-full bg-bg-deep">
-          <div className="h-full w-[7%] rounded-full bg-gradient-to-r from-accent to-mana" />
-        </div>
-      </div>
-
-      <SystemStatus />
-    </div>
-  );
-}
-
-// ─── MANA CHECK-IN ────────────────────────────────────────
-function ManaCheckIn({ onCheck }: { onCheck: (val: number) => void }) {
-  return (
-    <div className="my-8 text-center">
-      <Zap className="mx-auto mb-3 h-8 w-8 text-mana" />
-      <p className="mb-1 text-sm font-medium text-text-bright">Как энергия сейчас?</p>
-      <p className="mb-5 text-xs text-text-dim">Нажми — и система подстроит нагрузку</p>
-      <div className="flex items-center justify-center gap-3">
-        {[1, 2, 3, 4, 5].map((val) => (
-          <button
-            key={val}
-            onClick={() => onCheck(val)}
-            className={cn(
-              "flex h-14 w-14 flex-col items-center justify-center rounded-xl border transition-all hover:scale-105",
-              val <= 2
-                ? "border-hp/30 hover:border-hp/60 hover:bg-hp/10"
-                : val <= 3
-                ? "border-gold/30 hover:border-gold/60 hover:bg-gold/10"
-                : "border-xp/30 hover:border-xp/60 hover:bg-xp/10",
-            )}
-          >
-            <span className="text-lg font-bold text-text-bright">{val}</span>
-            <span className="text-[8px] text-text-dim">{MANA_LABELS[val]}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── VOICE STREAM ─────────────────────────────────────────
-function VoiceStream({ onResult }: { onResult: (text: string) => void }) {
-  const [recording, setRecording] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-
-  const hasSpeechApi = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
-
-  const startRecording = useCallback(() => {
+  const startListening = useCallback(() => {
     if (!hasSpeechApi) return;
+    stopSpeaking();
+
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SR();
     recognition.lang = "ru-RU";
     recognition.interimResults = true;
     recognition.continuous = true;
-
     let fullText = "";
+    let lastResultTime = Date.now();
+
+    setConvoState("listening");
+    setLiveTranscript("");
+    startAudioAnalyser();
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let interim = "";
+      let current = "";
+      fullText = "";
       for (let i = 0; i < event.results.length; i++) {
         const t = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          fullText += t + " ";
-        } else {
-          interim = t;
-        }
+        if (event.results[i].isFinal) fullText += t + " ";
+        else current = t;
       }
-      setTranscript(fullText + interim);
+      setLiveTranscript(fullText + current);
+      lastResultTime = Date.now();
+
+      clearTimeout(silenceTimerRef.current);
+      if (fullText.trim()) {
+        silenceTimerRef.current = setTimeout(() => {
+          if (Date.now() - lastResultTime >= 1500 && fullText.trim()) {
+            recognition.stop();
+          }
+        }, 1800);
+      }
     };
 
-    recognition.onerror = () => setRecording(false);
     recognition.onend = () => {
-      setRecording(false);
+      stopAudioAnalyser();
+      clearTimeout(silenceTimerRef.current);
       if (fullText.trim()) {
-        setProcessing(true);
-        processVoiceStream(fullText.trim()).then((result) => {
-          onResult(result || fullText.trim());
-          setProcessing(false);
-          setTranscript("");
-        });
+        setLiveTranscript("");
+        sendMessage(fullText.trim());
+      } else {
+        setConvoState("idle");
       }
+    };
+
+    recognition.onerror = () => {
+      stopAudioAnalyser();
+      setConvoState("idle");
     };
 
     recognition.start();
     recognitionRef.current = recognition;
-    setRecording(true);
-    setTranscript("");
-  }, [hasSpeechApi, onResult]);
+  }, [hasSpeechApi, sendMessage, startAudioAnalyser, stopAudioAnalyser]);
 
-  const stopRecording = useCallback(() => {
+  const stopListening = useCallback(() => {
     recognitionRef.current?.stop();
-  }, []);
+    clearTimeout(silenceTimerRef.current);
+    stopAudioAnalyser();
+  }, [stopAudioAnalyser]);
 
-  if (!hasSpeechApi) return null;
-
-  return (
-    <div className="flex flex-col items-center gap-2">
-      {transcript && (
-        <div className="w-full max-w-md rounded-lg border border-border/30 bg-bg-deep/30 px-4 py-2">
-          <p className="text-xs text-text-dim/70">{transcript}</p>
-        </div>
-      )}
-      <button
-        onClick={recording ? stopRecording : startRecording}
-        disabled={processing}
-        className={cn(
-          "flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium transition-all",
-          recording
-            ? "bg-hp/20 text-hp animate-pulse"
-            : processing
-            ? "bg-bg-deep text-text-dim"
-            : "bg-accent/10 text-accent hover:bg-accent/20",
-        )}
-      >
-        {processing ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Обрабатываю...
-          </>
-        ) : recording ? (
-          <>
-            <MicOff className="h-4 w-4" />
-            Остановить
-          </>
-        ) : (
-          <>
-            <Mic className="h-4 w-4" />
-            Поток
-          </>
-        )}
-      </button>
-    </div>
-  );
-}
-
-async function processVoiceStream(text: string): Promise<string> {
-  try {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "Claude Haiku",
-        messages: [
-          {
-            role: "system",
-            content:
-              "Ты — Moltbot, ассистент Архитектора. Тебе приходит голосовой поток (транскрипция). Кратко структурируй: выдели задачи (если есть), идеи, решения. Формат: одно-два предложения итога. Если это просто мысль — перефразируй кратко. Русский язык.",
-          },
-          { role: "user", content: `Голосовой поток: "${text}"` },
-        ],
-      }),
-    });
-    if (!res.ok) return text;
-    return await res.text() || text;
-  } catch {
-    return text;
-  }
-}
-
-// ─── SHARED COMPONENTS ──────────────────────────────────────
-
-function StatCard({
-  icon, label, value, delta, accent,
-}: {
-  icon: React.ReactNode; label: string; value: string; delta: string; accent: string;
-}) {
-  return (
-    <div className={`rounded-xl border ${accent} bg-bg-card p-4`}>
-      <div className="flex items-center gap-2">
-        {icon}
-        <span className="text-xs text-text-dim">{label}</span>
-      </div>
-      <p className="mt-2 text-xl font-bold text-text-bright">{value}</p>
-      <p className="mt-1 text-[10px] text-text-dim">{delta}</p>
-    </div>
-  );
-}
-
-function QuestRow({ quest, onToggle }: { quest: Quest; onToggle: (id: string) => void }) {
-  const priorityColors = {
-    normal: "bg-mana/20 text-mana",
-    critical: "bg-hp/20 text-hp",
-    boss: "bg-gold/20 text-gold",
-  };
-  const priorityLabels = { normal: "обычный", critical: "крит", boss: "БОСС" };
-
-  return (
-    <div
-      className={cn(
-        "flex items-center gap-2 rounded-lg border border-border/50 bg-bg-deep/50 px-3 py-2.5 lg:gap-3 lg:px-4 lg:py-3 transition-all",
-        quest.done && "opacity-50",
-      )}
-    >
-      <button onClick={() => onToggle(quest.id)} className="shrink-0">
-        {quest.done ? (
-          <CheckCircle2 className="h-5 w-5 text-xp" />
-        ) : (
-          <Circle className="h-5 w-5 text-text-dim/40 transition-colors hover:text-accent" />
-        )}
-      </button>
-      <div className="flex-1">
-        <div className="flex flex-wrap items-center gap-1.5 lg:gap-2">
-          <span className={cn("text-xs lg:text-sm text-text-bright", quest.done && "line-through")}>
-            {quest.title}
-          </span>
-          <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${priorityColors[quest.priority]}`}>
-            {priorityLabels[quest.priority]}
-          </span>
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-2 lg:mt-1.5 lg:gap-3">
-          <span className="text-[10px] text-text-dim">{quest.project}</span>
-          <span className="text-[10px] text-xp">+{quest.xp} XP</span>
-          <div className="hidden h-1 w-24 rounded-full bg-border sm:block">
-            <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${quest.progress}%` }} />
-          </div>
-          <span className="hidden text-[10px] text-text-dim sm:inline">{quest.progress}%</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function LogEntry({ entry }: { entry: LogItem }) {
-  const colors: Record<string, string> = {
-    story: "border-l-accent",
-    achievement: "border-l-xp",
-    gold: "border-l-gold",
-    xp: "border-l-mana",
-    log: "border-l-text-dim",
-    voice: "border-l-accent",
-  };
-  const icons: Record<string, string> = {
-    story: "📖",
-    achievement: "🏆",
-    gold: "💰",
-    xp: "✨",
-    log: "📝",
-    voice: "🎤",
-  };
-
-  return (
-    <div className={`border-l-2 ${colors[entry.type]} pl-3`}>
-      <p className="text-xs text-text">
-        <span className="mr-1">{icons[entry.type]}</span>
-        {entry.text}
-      </p>
-      <p className="mt-0.5 text-[10px] text-text-dim">{entry.time}</p>
-    </div>
-  );
-}
-
-function SystemStatus() {
-  const [status, setStatus] = useState<{
-    ai: boolean; openclaw: boolean; mode: string; pwa: boolean;
-  }>({ ai: false, openclaw: false, mode: "...", pwa: false });
-
-  useEffect(() => {
-    fetch("/api/chat")
-      .then((r) => r.json())
-      .then((d) =>
-        setStatus((s) => ({
-          ...s,
-          ai: d.hasKey || d.openclaw,
-          openclaw: !!d.openclaw,
-          mode: d.mode === "openclaw" ? "OpenClaw VPS" : d.hasKey ? "OpenRouter" : "offline",
-        })),
-      )
-      .catch(() => {});
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistration().then((reg) => {
-        setStatus((s) => ({ ...s, pwa: !!reg }));
-      });
+  const toggleConvoMode = useCallback(() => {
+    if (convoMode) {
+      setConvoMode(false);
+      stopListening();
+      stopSpeaking();
+      setConvoState("idle");
+    } else {
+      setConvoMode(true);
+      startListening();
     }
-  }, []);
+  }, [convoMode, setConvoMode, startListening, stopListening]);
 
-  const items = [
-    { label: status.mode, ok: status.ai, icon: Bot },
-    { label: "OpenClaw RAG", ok: status.openclaw, icon: Database },
-    { label: "PWA", ok: status.pwa, icon: Smartphone },
-  ];
+  const handleMicTap = useCallback(() => {
+    if (convoState === "listening") {
+      stopListening();
+    } else if (convoState === "speaking") {
+      stopSpeaking();
+      setConvoState("idle");
+      if (convoMode) setTimeout(() => startListening(), 300);
+    } else {
+      startListening();
+    }
+  }, [convoState, convoMode, startListening, stopListening]);
+
+  const rp = report as { player?: { level?: number; xp?: number; gold?: number; mana?: number }; quests?: { active?: number }; content?: { pending_review?: number }; cursor_tasks?: { pending?: number } } | null;
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/50 bg-bg-card/50 px-4 py-2.5">
-      <span className="text-[10px] font-medium text-text-dim">Системы:</span>
-      {items.map((item) => (
-        <div key={item.label} className="flex items-center gap-1.5">
-          <item.icon className={cn("h-3 w-3", item.ok ? "text-xp" : "text-text-dim/30")} />
-          <span className={cn("text-[10px]", item.ok ? "text-text" : "text-text-dim/40")}>{item.label}</span>
-          <div className={cn("h-1.5 w-1.5 rounded-full", item.ok ? "bg-xp" : "bg-text-dim/20")} />
+    <div className="animate-fade-in flex h-[calc(100vh-5rem)] flex-col lg:h-[calc(100vh-3rem)]">
+      {/* Top bar */}
+      <div className="flex items-center justify-between border-b border-border bg-bg-card px-4 py-2">
+        <div className="flex items-center gap-2.5">
+          <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg", convoMode ? "bg-xp/20" : "bg-accent/20")}>
+            {convoMode ? <Radio className="h-3.5 w-3.5 text-xp" /> : <Bot className="h-3.5 w-3.5 text-accent" />}
+          </div>
+          <div>
+            <h1 className="text-xs font-semibold text-text-bright">{getGreeting()}, Архитектор</h1>
+            <div className="flex items-center gap-2 text-[10px] text-text-dim">
+              {rp?.player && <span>Ур.{rp.player.level}</span>}
+              {rp?.player && <span className="text-gold">{rp.player.gold}K₽</span>}
+              {manaCheckedToday && <span className={MANA_COLORS[mana]}>⚡{mana}</span>}
+              {rp?.quests?.active ? <span>{rp.quests.active} квестов</span> : null}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {!manaCheckedToday && (
+            <div className="flex items-center gap-0.5">
+              <span className="text-[10px] text-text-dim mr-1">Мана:</span>
+              {[1, 2, 3, 4, 5].map((v) => (
+                <button key={v} onClick={() => { setMana(v); setManaDate(today); }}
+                  className={cn("h-6 w-6 rounded text-[10px] font-bold hover:scale-110", v <= 2 ? "text-hp hover:bg-hp/10" : v <= 3 ? "text-gold hover:bg-gold/10" : "text-xp hover:bg-xp/10")}>{v}</button>
+              ))}
+            </div>
+          )}
+          <button onClick={() => setShowPanel(!showPanel)} className="rounded p-1 text-text-dim hover:text-text lg:hidden">
+            {showPanel ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Main chat area */}
+        <div className="flex flex-1 flex-col">
+          {/* Messages */}
+          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto bg-bg-deep/30 p-4">
+            {messages.map((msg) => (
+              <MessageBubble key={msg.id} message={msg} />
+            ))}
+            {liveTranscript && (
+              <div className="flex gap-2.5">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-mana/20">
+                  <User className="h-3.5 w-3.5 text-mana" />
+                </div>
+                <div className="max-w-[80%] rounded-xl bg-mana/5 border border-mana/20 px-3.5 py-2.5">
+                  <p className="text-sm text-mana/80 italic">{liveTranscript}</p>
+                  <div className="mt-1 flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-mana animate-pulse" />
+                    <span className="text-[10px] text-mana/50">слушаю...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            {isTyping && (
+              <div className="flex items-center gap-2 text-sm text-text-dim">
+                <Bot className="h-4 w-4 animate-pulse text-accent" />
+                <span className="animate-pulse">думает...</span>
+              </div>
+            )}
+          </div>
+
+          {/* Voice + Input area */}
+          <div className="border-t border-border bg-bg-card">
+            {/* Conversation mode big button area */}
+            {convoMode && (
+              <div className="flex flex-col items-center gap-3 px-4 py-5">
+                {convoState === "speaking" && (
+                  <div className="flex items-center gap-2 text-xs text-xp">
+                    <Volume2 className="h-3.5 w-3.5 animate-pulse" />
+                    Moltbot говорит...
+                  </div>
+                )}
+
+                {/* Big mic button with audio level ring */}
+                <div className="relative">
+                  {/* Audio level ring */}
+                  <div
+                    className={cn(
+                      "absolute inset-0 rounded-full transition-all duration-100",
+                      convoState === "listening" && "bg-accent/10",
+                      convoState === "speaking" && "bg-xp/10",
+                      convoState === "processing" && "bg-gold/10",
+                    )}
+                    style={{
+                      transform: `scale(${1 + audioLevel * 0.6})`,
+                      opacity: convoState === "listening" ? 0.6 : 0,
+                    }}
+                  />
+                  <button
+                    onClick={handleMicTap}
+                    disabled={convoState === "processing"}
+                    className={cn(
+                      "relative flex h-20 w-20 items-center justify-center rounded-full transition-all",
+                      convoState === "listening" && "bg-accent/20 text-accent shadow-lg shadow-accent/20 scale-110",
+                      convoState === "speaking" && "bg-xp/20 text-xp",
+                      convoState === "processing" && "bg-gold/20 text-gold",
+                      convoState === "idle" && "bg-bg-deep text-text-dim hover:bg-accent/10 hover:text-accent hover:scale-105",
+                    )}
+                  >
+                    {convoState === "processing" ? (
+                      <Loader2 className="h-8 w-8 animate-spin" />
+                    ) : convoState === "listening" ? (
+                      <Mic className="h-8 w-8" />
+                    ) : convoState === "speaking" ? (
+                      <Volume2 className="h-8 w-8" />
+                    ) : (
+                      <Mic className="h-8 w-8" />
+                    )}
+                  </button>
+                </div>
+
+                <p className="text-[10px] text-text-dim">
+                  {convoState === "listening" ? "Говорите... пауза = отправка" :
+                   convoState === "processing" ? "Обрабатываю..." :
+                   convoState === "speaking" ? "Нажмите чтобы прервать" :
+                   "Нажмите чтобы говорить"}
+                </p>
+
+                <button onClick={toggleConvoMode} className="flex items-center gap-1.5 rounded-lg bg-hp/10 px-3 py-1.5 text-xs text-hp hover:bg-hp/20">
+                  <PhoneOff className="h-3 w-3" /> Завершить разговор
+                </button>
+              </div>
+            )}
+
+            {/* Text input + voice toggle */}
+            <div className={cn("p-3", convoMode && "border-t border-border/50")}>
+              <div className="flex items-center gap-2">
+                {!convoMode && hasSpeechApi && (
+                  <button
+                    onClick={toggleConvoMode}
+                    className="flex items-center gap-1.5 rounded-xl bg-accent/10 px-3 py-2.5 text-accent transition-all hover:bg-accent/20 hover:scale-105"
+                    title="Голосовой режим"
+                  >
+                    <Phone className="h-5 w-5" />
+                  </button>
+                )}
+                {!convoMode && hasSpeechApi && (
+                  <button
+                    onClick={() => { if (convoState !== "listening") startListening(); else stopListening(); }}
+                    className={cn("rounded-xl p-2.5 transition-all", convoState === "listening" ? "bg-hp/20 text-hp animate-pulse" : "text-text-dim hover:bg-bg-hover hover:text-accent")}
+                    title="Голосовой ввод"
+                  >
+                    {convoState === "listening" ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                  </button>
+                )}
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                  placeholder={convoMode ? "или напишите..." : "Написать Moltbot..."}
+                  className="flex-1 rounded-xl border border-border bg-bg-deep px-4 py-2.5 text-sm text-text placeholder:text-text-dim/40 focus:border-accent/50 focus:outline-none"
+                />
+                <button onClick={() => sendMessage()} disabled={!input.trim() || isTyping} className="rounded-xl bg-accent px-4 py-2.5 text-white hover:bg-accent-dim disabled:opacity-30">
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
+              {!convoMode && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {["/status", "/quests", "/report", "генерируй контент"].map((cmd) => (
+                    <button key={cmd} onClick={() => setInput(cmd)} className="rounded-md border border-border px-2 py-1 text-[10px] text-text-dim hover:border-accent/50 hover:text-accent">{cmd}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Side panel */}
+        <div className={cn("w-64 shrink-0 overflow-y-auto border-l border-border bg-bg-card p-3 space-y-4", showPanel ? "block" : "hidden lg:block")}>
+          {rp?.player && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-mana">
+                  <Sparkles className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-text-bright">Ур. {rp.player.level}</p>
+                  <p className="text-[10px] text-text-dim">{rp.player.xp} XP</p>
+                </div>
+              </div>
+              <MiniBar label="Gold" value={rp.player.gold || 0} max={500} color="bg-gold" />
+              <MiniBar label="Mana" value={manaCheckedToday ? mana : (rp.player.mana || 0)} max={5} color="bg-mana" />
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-text-dim">Навигация</p>
+            <QuickBtn icon={<Sparkles className="h-3 w-3" />} label="Конвейер" href="/pipeline" count={rp?.content?.pending_review} color="text-gold" />
+            <QuickBtn icon={<ListTodo className="h-3 w-3" />} label="Задачи" href="/tasks" count={rp?.cursor_tasks?.pending} color="text-accent" />
+            <QuickBtn icon={<Target className="h-3 w-3" />} label="Квесты" href="/quests" count={rp?.quests?.active} color="text-xp" />
+            <QuickBtn icon={<TrendingUp className="h-3 w-3" />} label="Игрок" href="/player" color="text-mana" />
+          </div>
+
+          <QuestsMini />
+          <SystemMini />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MessageBubble({ message }: { message: ChatMsg }) {
+  const [copied, setCopied] = useState(false);
+  if (message.role === "system") {
+    return (
+      <div className="flex justify-center">
+        <span className="rounded-full bg-accent/10 px-3 py-1 text-[10px] text-accent">{message.text}</span>
+      </div>
+    );
+  }
+  const isUser = message.role === "user";
+  return (
+    <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : ""}`}>
+      <div className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", isUser ? "bg-mana/20" : "bg-accent/20")}>
+        {isUser ? <User className="h-3.5 w-3.5 text-mana" /> : <Sparkles className="h-3.5 w-3.5 text-accent" />}
+      </div>
+      <div className={cn("group max-w-[80%] rounded-xl px-3.5 py-2.5", isUser ? "bg-mana/10" : "border border-border/50 bg-bg-card")}>
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{message.text}</p>
+        <div className="mt-1 flex items-center gap-2">
+          {message.time && <p className="text-[10px] text-text-dim">{message.time}</p>}
+          {!isUser && message.text && (
+            <button
+              onClick={() => { navigator.clipboard.writeText(message.text); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+              className="invisible text-text-dim/30 hover:text-accent group-hover:visible"
+            >
+              {copied ? <Check className="h-3 w-3 text-xp" /> : <Copy className="h-3 w-3" />}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MiniBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-8 text-[10px] text-text-dim">{label}</span>
+      <div className="h-1.5 flex-1 rounded-full bg-bg-deep">
+        <div className={cn("h-full rounded-full", color)} style={{ width: `${Math.min((value / max) * 100, 100)}%` }} />
+      </div>
+      <span className="w-8 text-right text-[10px] text-text-dim">{value}</span>
+    </div>
+  );
+}
+
+function QuickBtn({ icon, label, href, count, color }: { icon: React.ReactNode; label: string; href: string; count?: number; color?: string }) {
+  return (
+    <a href={href} className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-text-dim hover:bg-bg-hover hover:text-text">
+      <span className={color}>{icon}</span>
+      <span className="flex-1">{label}</span>
+      {count !== undefined && count > 0 && (
+        <span className={cn("rounded-full bg-bg-deep px-1.5 py-0.5 text-[10px] font-bold", color)}>{count}</span>
+      )}
+    </a>
+  );
+}
+
+function QuestsMini() {
+  const [quests, setQuests] = useState<{ title: string; priority: string; xp: number }[]>([]);
+  useEffect(() => {
+    try {
+      setQuests(listActiveQuests().slice(0, 3).map((q) => ({ title: q.title, priority: q.priority, xp: q.xp })));
+    } catch {}
+  }, []);
+  if (quests.length === 0) return null;
+  return (
+    <div className="space-y-1">
+      <p className="text-[10px] font-medium uppercase tracking-wider text-text-dim">Квесты</p>
+      {quests.map((q, i) => (
+        <div key={i} className="flex items-center gap-1 px-1 text-[10px]">
+          <span className={q.priority === "boss" ? "text-gold" : q.priority === "critical" ? "text-hp" : "text-text-dim/50"}>
+            {q.priority === "boss" ? "👑" : q.priority === "critical" ? "🔥" : "·"}
+          </span>
+          <span className="flex-1 truncate text-text-dim">{q.title}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+function SystemMini() {
+  const [st, setSt] = useState<{ mode?: string; openclaw?: boolean }>({});
+  useEffect(() => { fetch("/api/chat").then((r) => r.json()).then(setSt).catch(() => {}); }, []);
+  return (
+    <div className="flex items-center gap-1.5 pt-2 border-t border-border/30">
+      <div className={cn("h-1.5 w-1.5 rounded-full", st.openclaw ? "bg-xp" : st.mode ? "bg-gold" : "bg-text-dim/20")} />
+      <span className="text-[10px] text-text-dim">{st.mode === "openclaw" ? "OpenClaw" : st.mode || "..."}</span>
     </div>
   );
 }

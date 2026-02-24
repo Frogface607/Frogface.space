@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase } from "./supabase";
 
 /**
- * Persisted state hook: Supabase kv_store with localStorage fallback.
- * Loads from localStorage instantly (for fast hydration), then syncs with Supabase.
+ * Persisted state hook: localStorage instant load + API sync (OpenClaw/Supabase).
+ * Loads from localStorage first (fast hydration), then fetches from /api/kv.
+ * On write: saves to localStorage immediately, debounced save to API.
  */
 export function usePersistedState<T>(
   key: string,
@@ -18,27 +18,22 @@ export function usePersistedState<T>(
   useEffect(() => {
     let cancelled = false;
 
-    // 1. Instant hydration from localStorage
     try {
       const local = localStorage.getItem(key);
       if (local && !cancelled) setStored(JSON.parse(local));
     } catch {}
 
-    // 2. Then try Supabase (async, overwrites if newer)
-    if (supabase) {
-      Promise.resolve(
-        supabase.from("kv_store").select("value").eq("key", key).maybeSingle()
-      )
-        .then(({ data }) => {
-          if (!cancelled && data?.value !== undefined) {
-            setStored(data.value as T);
-            try {
-              localStorage.setItem(key, JSON.stringify(data.value));
-            } catch {}
-          }
-        })
-        .catch(() => {});
-    }
+    fetch(`/api/kv?key=${encodeURIComponent(key)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && data.value !== undefined && data.value !== null) {
+          setStored(data.value as T);
+          try {
+            localStorage.setItem(key, JSON.stringify(data.value));
+          } catch {}
+        }
+      })
+      .catch(() => {});
 
     setHydrated(true);
     return () => { cancelled = true; };
@@ -49,21 +44,18 @@ export function usePersistedState<T>(
       setStored((prev) => {
         const next = value instanceof Function ? value(prev) : value;
 
-        // Always save to localStorage immediately
         try {
           localStorage.setItem(key, JSON.stringify(next));
         } catch {}
 
-        // Debounced save to Supabase (300ms)
-        if (supabase) {
-          clearTimeout(saveTimer.current);
-          saveTimer.current = setTimeout(() => {
-            supabase!
-              .from("kv_store")
-              .upsert({ key, value: next, updated_at: new Date().toISOString() })
-              .then(() => {});
-          }, 300);
-        }
+        clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(() => {
+          fetch("/api/kv", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ key, value: next }),
+          }).catch(() => {});
+        }, 300);
 
         return next;
       });

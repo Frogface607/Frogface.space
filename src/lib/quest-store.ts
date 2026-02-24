@@ -75,12 +75,23 @@ export interface QuestAction {
   query?: string;
 }
 
-export function parseActions(text: string): QuestAction[] {
-  const actions: QuestAction[] = [];
-  const regex = /\[QUEST:(.*?)\]/g;
-  let match;
+export interface TaskAction {
+  type: "task_create";
+  title: string;
+  description: string;
+  project: string;
+  priority: string;
+  agent: string;
+}
 
-  while ((match = regex.exec(text)) !== null) {
+export type Action = QuestAction | TaskAction;
+
+export function parseActions(text: string): Action[] {
+  const actions: Action[] = [];
+
+  const questRegex = /\[QUEST:(.*?)\]/g;
+  let match;
+  while ((match = questRegex.exec(text)) !== null) {
     const raw = match[1].trim();
     const parts = raw.split("|").map((s) => s.trim());
 
@@ -99,10 +110,25 @@ export function parseActions(text: string): QuestAction[] {
     }
   }
 
+  const taskRegex = /\[TASK:CREATE\|(.*?)\]/g;
+  while ((match = taskRegex.exec(text)) !== null) {
+    const parts = match[1].split("|").map((s) => s.trim());
+    if (parts[0]) {
+      actions.push({
+        type: "task_create",
+        title: parts[0],
+        description: parts[1] || parts[0],
+        project: parts[2] || "frogface",
+        priority: parts[3] || "normal",
+        agent: parts[4] || "cursor",
+      });
+    }
+  }
+
   return actions;
 }
 
-export function executeActions(actions: QuestAction[]): string[] {
+export async function executeActions(actions: Action[]): Promise<string[]> {
   const results: string[] = [];
 
   for (const a of actions) {
@@ -127,6 +153,30 @@ export function executeActions(actions: QuestAction[]): string[] {
             (q, i) => `${i + 1}. ${q.title} (${q.project}, +${q.xp} XP)`,
           );
           results.push("🎯 Активные квесты:\n" + lines.join("\n"));
+        }
+        break;
+      }
+      case "task_create": {
+        try {
+          const res = await fetch("/api/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: a.title,
+              description: a.description,
+              project: a.project,
+              priority: a.priority,
+              agent: a.agent,
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            results.push(`🤖 Задача для Cursor создана: "${a.title}" [${data.task.id}]`);
+          } else {
+            results.push(`⚠️ Не удалось создать задачу: "${a.title}" (API недоступен)`);
+          }
+        } catch {
+          results.push(`⚠️ Не удалось создать задачу: "${a.title}" (сеть)`);
         }
         break;
       }

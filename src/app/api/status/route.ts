@@ -29,14 +29,19 @@ export async function GET(req: NextRequest) {
 
   const openclaw = await checkOpenClaw();
 
+  const { getStorageInfo } = await import("@/lib/storage");
+  const storage = getStorageInfo();
+
   const result: Record<string, unknown> = {
     system: "frogface",
-    version: "2.0",
+    version: "3.0",
     timestamp: new Date().toISOString(),
     openrouter: !!process.env.OPENROUTER_API_KEY,
     openclaw: openclaw.connected,
     openclawHealth: openclaw.health ?? false,
     mode: openclaw.connected ? "openclaw" : process.env.OPENROUTER_API_KEY ? "openrouter-direct" : "offline",
+    storage: storage.primary,
+    supabase: storage.supabase,
   };
 
   return Response.json(result);

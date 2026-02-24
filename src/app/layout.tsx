@@ -1,10 +1,38 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+const SITE_URL = "https://frogface.space";
+const SITE_TITLE = "Frogface — Life OS";
+const SITE_DESC = "Персональная операционная система жизни. AI-агенты, RPG-движок, контент-конвейер, голосовое управление.";
+
 export const metadata: Metadata = {
-  title: "Frogface — Life OS",
-  description: "Персональная операционная система жизни. RPG-движок. Студия агентов. Командный центр.",
+  title: {
+    default: SITE_TITLE,
+    template: "%s | Frogface",
+  },
+  description: SITE_DESC,
   manifest: "/manifest.json",
+  metadataBase: new URL(SITE_URL),
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "ru_RU",
+    url: SITE_URL,
+    siteName: "Frogface",
+    title: SITE_TITLE,
+    description: SITE_DESC,
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Frogface Life OS" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESC,
+    images: ["/og.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -28,6 +56,25 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Frogface Life OS",
+  url: SITE_URL,
+  description: SITE_DESC,
+  applicationCategory: "ProductivityApplication",
+  operatingSystem: "Web",
+  author: {
+    "@type": "Person",
+    name: "Sergey Orlov",
+  },
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "RUB",
+  },
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -35,6 +82,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru" className="dark">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className="antialiased">
         {children}
         <script

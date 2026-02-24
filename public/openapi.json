@@ -57,6 +57,97 @@
         }
       }
     },
+    "/api/tasks": {
+      "get": {
+        "operationId": "getTasks",
+        "summary": "Get task queue for Cursor and other agents",
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["pending", "in_progress", "done", "cancelled"] }, "description": "Filter by status" },
+          { "name": "agent", "in": "query", "schema": { "type": "string", "enum": ["cursor", "moltbot", "human", "any"] }, "description": "Filter by agent" },
+          { "name": "project", "in": "query", "schema": { "type": "string" }, "description": "Filter by project" }
+        ],
+        "responses": {
+          "200": { "description": "List of tasks" }
+        }
+      },
+      "post": {
+        "operationId": "createTask",
+        "summary": "Create a task for Cursor AI or other agents",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "description"],
+                "properties": {
+                  "title": { "type": "string", "description": "Task title" },
+                  "description": { "type": "string", "description": "Detailed task description" },
+                  "priority": { "type": "string", "enum": ["boss", "critical", "high", "normal", "low"] },
+                  "project": { "type": "string", "description": "Project: myreply, edison, frogface, video, content" },
+                  "agent": { "type": "string", "enum": ["cursor", "moltbot", "human", "any"], "description": "Who should execute" },
+                  "files": { "type": "array", "items": { "type": "string" }, "description": "Related file paths" },
+                  "acceptance": { "type": "array", "items": { "type": "string" }, "description": "Acceptance criteria" },
+                  "context": { "type": "string", "description": "Additional context" },
+                  "quest_id": { "type": "string", "description": "Related quest ID" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Task created" }
+        }
+      },
+      "patch": {
+        "operationId": "updateTask",
+        "summary": "Update task status or result",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["id"],
+                "properties": {
+                  "id": { "type": "string", "description": "Task ID" },
+                  "status": { "type": "string", "enum": ["pending", "in_progress", "done", "cancelled"] },
+                  "result": { "type": "string", "description": "Task result/summary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Task updated" }
+        }
+      }
+    },
+    "/api/notify": {
+      "post": {
+        "operationId": "notifyMoltbot",
+        "summary": "Send a notification to Moltbot chat (from Cursor, bots, etc.)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                  "message": { "type": "string", "description": "Message text" },
+                  "from": { "type": "string", "description": "Sender name (default: cursor)" },
+                  "channel": { "type": "string", "description": "Chat channel: command, moltbot, etc." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Notification sent" }
+        }
+      }
+    },
     "/api/log": {
       "get": {
         "operationId": "getLog",

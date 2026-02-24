@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase } from "./supabase";
 
 export interface ChatMsg {
   id: string;
@@ -11,8 +10,8 @@ export interface ChatMsg {
 }
 
 /**
- * Chat history hook: localStorage instant load + Supabase sync.
- * Each message is stored individually in chat_messages table.
+ * Chat history hook: localStorage instant load + API sync (OpenClaw/Supabase).
+ * Messages are stored via /api/kv with key ff_chat_{agentId}.
  */
 export function useChatHistory(
   agentId: string,
@@ -20,9 +19,8 @@ export function useChatHistory(
 ): [ChatMsg[], (msgs: ChatMsg[] | ((prev: ChatMsg[]) => ChatMsg[])) => void, () => void] {
   const lsKey = `ff_chat_${agentId}`;
   const [messages, setMessages] = useState<ChatMsg[]>(initialMessages);
-  const lastSyncedCount = useRef(0);
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Hydrate: localStorage first, then Supabase
   useEffect(() => {
     try {
       const local = localStorage.getItem(lsKey);
@@ -32,35 +30,17 @@ export function useChatHistory(
       }
     } catch {}
 
-    if (supabase) {
-      Promise.resolve(
-        supabase
-          .from("chat_messages")
-          .select("*")
-          .eq("agent_id", agentId)
-          .order("created_at", { ascending: true })
-          .limit(100)
-      )
-        .then(({ data }) => {
-          if (data && data.length > 0) {
-            const mapped: ChatMsg[] = data.map((row) => ({
-              id: String(row.id),
-              role: row.role as ChatMsg["role"],
-              text: row.content,
-              time: new Date(row.created_at).toLocaleTimeString("ru-RU", {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-            }));
-            setMessages(mapped);
-            lastSyncedCount.current = mapped.length;
-            try {
-              localStorage.setItem(lsKey, JSON.stringify(mapped));
-            } catch {}
-          }
-        })
-        .catch(() => {});
-    }
+    fetch(`/api/kv?key=${encodeURIComponent(lsKey)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.value && Array.isArray(data.value) && data.value.length > 0) {
+          setMessages(data.value as ChatMsg[]);
+          try {
+            localStorage.setItem(lsKey, JSON.stringify(data.value));
+          } catch {}
+        }
+      })
+      .catch(() => {});
   }, [agentId, lsKey]);
 
   const updateMessages = useCallback(
@@ -72,39 +52,30 @@ export function useChatHistory(
           localStorage.setItem(lsKey, JSON.stringify(next));
         } catch {}
 
-        // Save only new messages to Supabase
-        if (supabase && next.length > lastSyncedCount.current) {
-          const newMsgs = next.slice(lastSyncedCount.current);
-          const rows = newMsgs
-            .filter((m) => m.text)
-            .map((m) => ({
-              agent_id: agentId,
-              role: m.role,
-              content: m.text,
-            }));
-
-          if (rows.length > 0) {
-            supabase!.from("chat_messages").insert(rows).then(() => {});
-            lastSyncedCount.current = next.length;
-          }
-        }
+        clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(() => {
+          fetch("/api/kv", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ key: lsKey, value: next }),
+          }).catch(() => {});
+        }, 500);
 
         return next;
       });
     },
-    [agentId, lsKey],
+    [lsKey],
   );
 
   const clearHistory = useCallback(() => {
     setMessages(initialMessages);
-    lastSyncedCount.current = 0;
-    try {
-      localStorage.removeItem(lsKey);
-    } catch {}
-    if (supabase) {
-      supabase!.from("chat_messages").delete().eq("agent_id", agentId).then(() => {});
-    }
-  }, [agentId, lsKey, initialMessages]);
+    try { localStorage.removeItem(lsKey); } catch {}
+    fetch("/api/kv", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: lsKey, value: [] }),
+    }).catch(() => {});
+  }, [lsKey, initialMessages]);
 
   return [messages, updateMessages, clearHistory];
 }
