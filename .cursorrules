@@ -1,48 +1,52 @@
-# Frogface — Cursor Agent Rules
+# Frogface Studio — Система агентов
 
-## Флоу
+## Кто есть кто
+- **Архитектор (Сергей)** — CEO. Наговаривает в ChatGPT, принимает решения
+- **ChatGPT** — Советник. Структурирует потоки сознания, даёт стратегию
+- **Cursor-агенты** — Руководители отделов. Выполняют сложные задачи
+- **OpenClaw** — Исполнители. Рутина, автоответы, генерация контента
+
+## Cursor-агенты (отделы)
+
+### 1. Frogface (этот репо)
+CTO. Строит дашборд, инфраструктуру, связывает системы.
+Задачи: `tasks/frogface/` | Контекст: `tasks/frogface/AGENT.md`
+
+### 2. MyReply
+Product Lead. Фичи, лендинг, SEO, расширение.
+Задачи: `tasks/myreply/` | Контекст: `tasks/myreply/AGENT.md`
+
+### 3. Edison
+Креативный директор бара. Сайт, контент, автоматизация.
+Задачи: `tasks/edison/` | Контекст: `tasks/edison/AGENT.md`
+
+### 4. Контент-фабрика
+Head of Content. Посты для всех брендов.
+Задачи: `tasks/content/` | Контекст: `tasks/content/AGENT.md`
+
+### 5. Летописец
+Knowledge Officer. Отчёты, RAG, RPG-статы.
+Задачи: `tasks/chronicle/` | Контекст: `tasks/chronicle/AGENT.md`
+
+## Данные
 ```
-Архитектор (голос) → Telegram-бот → POST frogface.space/api/tasks → задача на сайте
-                                                                         ↓
-Архитектор открывает Cursor Cloud → запускает агента → агент читает tasks/{project}/ → работает → коммитит
+data/
+  player.json      — RPG-статы Архитектора
+  quests.json      — активные квесты
+  chronicle.json   — летопись (лог по дням)
+  reports/         — отчёты агентов после сессий
 ```
 
-## Структура задач
-```
-tasks/
-  myreply/    ← агент MyReply
-  edison/     ← агент Edison Bar
-  frogface/   ← агент Frogface (этот репо)
-  video/      ← агент Video/YouTube
-```
-
-Каждая папка содержит:
-- `AGENT.md` — контекст проекта для Cursor-агента
-- `TASK-XXX-name.md` — задачи
-
-## Как работать с задачей
-1. Прочитай `tasks/{project}/AGENT.md` — контекст проекта
-2. Найди задачи со статусом `pending`
-3. Выполни работу
-4. В файле задачи: `**Статус:** done` + секция `## Результат`
-5. `npx next build` (для frogface)
+## Флоу работы агента
+1. Прочитай свой `AGENT.md`
+2. Прочитай задачи из своей папки (статус `pending`)
+3. Выполни
+4. Обнови статус в файле задачи → `done` + `## Результат`
+5. Создай отчёт `data/reports/{agent}-{date}.md`
 6. Коммит + пуш
 
-## API для Telegram-бота
-Бот создаёт задачи одним POST:
-```
-POST https://frogface.space/api/tasks
-{
-  "title": "Афиша Эмберс",
-  "description": "Создать афишу для выступления",
-  "project": "edison",
-  "priority": "critical",
-  "agent": "cursor"
-}
-```
-
-## Код (для frogface проекта)
-- TypeScript, английские имена
-- UI русский, тёмная тема
+## Правила кода (для Frogface)
+- Next.js 16, TypeScript, Tailwind
+- Переменные: английские. UI текст: русский
 - Коммиты: feat:/fix:/chore:
-- Проверяй билд перед пушем
+- Проверяй `npx next build` перед коммитом

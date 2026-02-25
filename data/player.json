@@ -1,0 +1,22 @@
+{
+  "name": "Sergey Orlov",
+  "title": "Архитектор",
+  "level": 7,
+  "xp": 2847,
+  "xp_to_next": 5000,
+  "gold": 178,
+  "mana": 72,
+  "mana_max": 100,
+  "chapter": 1,
+  "chapter_name": "Фундамент",
+  "day": 2,
+  "quests_completed": 8,
+  "achievements": [
+    "first_blood",
+    "architect",
+    "voice_master",
+    "solo_preneur",
+    "cursor_bridge"
+  ],
+  "updated": "2026-02-24"
+}

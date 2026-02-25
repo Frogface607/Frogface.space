@@ -1,0 +1,32 @@
+[
+  {
+    "date": "2026-02-23",
+    "day": 1,
+    "title": "Начало. Фундамент заложен.",
+    "entries": [
+      "Frogface.space построен с нуля — дашборд, агенты, RPG",
+      "OpenClaw интегрирован (AI + RAG на VPS)",
+      "Голосовой режим: микрофон + TTS",
+      "PWA установка + мобильная вёрстка"
+    ],
+    "xp_earned": 1200,
+    "achievements": ["architect", "first_blood"]
+  },
+  {
+    "date": "2026-02-24",
+    "day": 2,
+    "title": "Мост построен. Конвейер запущен.",
+    "entries": [
+      "Moltbot ↔ Cursor Bridge — задачи через файлы и API",
+      "Контент-конвейер с Tinder-стилем",
+      "RPG Engine — динамические квесты, auto level-up",
+      "Storage: OpenClaw primary, Supabase не нужен",
+      "Conversation Mode — голосовой чат",
+      "SEO: OG, JSON-LD, sitemap",
+      "Стратегическая сессия: упрощение архитектуры",
+      "Frogface Studio — org chart, агенты по проектам"
+    ],
+    "xp_earned": 2400,
+    "achievements": ["cursor_bridge"]
+  }
+]

@@ -1,0 +1,12 @@
+[
+  { "id": "q1", "title": "Первые 10 платящих на MyReply", "project": "myreply", "xp": 800, "priority": "boss", "done": false },
+  { "id": "q2", "title": "Сайт Edison Bar — запустить", "project": "edison", "xp": 300, "priority": "boss", "done": false },
+  { "id": "q3", "title": "Записать первое видео «Идущий к руке»", "project": "video", "xp": 300, "priority": "boss", "done": false },
+  { "id": "q4", "title": "Soft Launch MyReply: личные контакты", "project": "myreply", "xp": 200, "priority": "critical", "done": false },
+  { "id": "q5", "title": "Афиша Эмберс", "project": "edison", "xp": 400, "priority": "critical", "done": false },
+  { "id": "q6", "title": "Контент-план на месяц (все каналы)", "project": "content", "xp": 150, "priority": "critical", "done": false },
+  { "id": "q7", "title": "Демо-видео MyReply (30 сек)", "project": "myreply", "xp": 100, "priority": "normal", "done": false },
+  { "id": "q8", "title": "Chrome-расширение MyReply", "project": "myreply", "xp": 180, "priority": "normal", "done": false },
+  { "id": "q9", "title": "Frogface.space — стабильный дашборд", "project": "frogface", "xp": 200, "priority": "critical", "done": false },
+  { "id": "q10", "title": "30 постов за месяц (все проекты)", "project": "content", "xp": 400, "priority": "boss", "done": false }
+]
