@@ -1,28 +1,16 @@
 {
-  "name": "Frogface — Life OS",
-  "short_name": "Frogface",
-  "description": "Персональная операционная система жизни. RPG-движок. Студия агентов.",
+  "name": "8FATES — Wordle для моральных дилемм",
+  "short_name": "8FATES",
+  "description": "Ежедневная интерактивная история. 7 выборов. 8 судеб. AI-концовка.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0f",
-  "theme_color": "#8b5cf6",
-  "orientation": "any",
+  "background_color": "#06060c",
+  "theme_color": "#8B5CF6",
   "icons": [
     {
       "src": "/icon.svg",
       "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/svg+xml"
     }
   ]
 }

@@ -1,41 +1,80 @@
--- Frogface Life OS — Supabase Schema
--- Run this in Supabase SQL Editor (Dashboard → SQL Editor → New Query)
+-- 8FATES Database Schema
 
--- Key-value store for simple state (HQ quests, agent statuses, etc.)
-create table if not exists kv_store (
-  key text primary key,
-  value jsonb not null,
-  updated_at timestamptz default now()
-);
-
--- Activity log / chronicle
-create table if not exists activity_log (
-  id bigint generated always as identity primary key,
-  source text not null default 'system',  -- 'hq', 'agent:moltbot', 'command', etc.
-  type text not null default 'log',        -- 'story', 'achievement', 'gold', 'xp', 'log'
-  text text not null,
+-- Stories catalog
+create table if not exists stories (
+  id text primary key,
+  title text not null,
+  subtitle text,
+  setting text,
+  year text,
+  themes text[] default '{}',
+  beats jsonb not null,
+  ending_types jsonb not null,
+  active boolean default false,
+  publish_date date,
   created_at timestamptz default now()
 );
 
--- Chat messages (all agents + command center)
-create table if not exists chat_messages (
-  id bigint generated always as identity primary key,
-  agent_id text not null,                  -- 'moltbot', 'gm', 'analyst', 'command', etc.
-  role text not null,                      -- 'user', 'assistant', 'agent', 'system'
+-- Game sessions
+create table if not exists game_sessions (
+  id uuid primary key default gen_random_uuid(),
+  story_id text references stories(id),
+  traits jsonb not null,
+  choice_history jsonb not null default '[]',
+  tags text[] default '{}',
+  ending_type text,
+  ending_data jsonb,
+  started_at timestamptz default now(),
+  completed_at timestamptz,
+  fingerprint text -- anonymous player tracking
+);
+
+-- Daily statistics (aggregated)
+create table if not exists daily_stats (
+  id uuid primary key default gen_random_uuid(),
+  story_id text references stories(id),
+  date date not null,
+  total_players integer default 0,
+  ending_distribution jsonb not null default '[]',
+  updated_at timestamptz default now(),
+  unique(story_id, date)
+);
+
+-- Living World newspapers
+create table if not exists newspapers (
+  id uuid primary key default gen_random_uuid(),
+  story_id text references stories(id),
+  day_number integer not null,
+  headline text not null,
   content text not null,
-  created_at timestamptz default now()
+  published_at timestamptz default now(),
+  unique(story_id, day_number)
 );
 
--- Indexes for fast lookups
-create index if not exists idx_chat_agent on chat_messages (agent_id, created_at);
-create index if not exists idx_log_source on activity_log (source, created_at);
+-- Indexes
+create index if not exists idx_sessions_story on game_sessions(story_id);
+create index if not exists idx_sessions_date on game_sessions(started_at);
+create index if not exists idx_sessions_ending on game_sessions(ending_type);
+create index if not exists idx_stats_date on daily_stats(date);
+create index if not exists idx_newspapers_story on newspapers(story_id, day_number);
 
--- Enable Row Level Security (public access since this is a personal app with auth on app level)
-alter table kv_store enable row level security;
-alter table activity_log enable row level security;
-alter table chat_messages enable row level security;
+-- RLS
+alter table stories enable row level security;
+alter table game_sessions enable row level security;
+alter table daily_stats enable row level security;
+alter table newspapers enable row level security;
 
--- Allow all operations for anon key (personal app, auth handled by middleware)
-create policy "Allow all on kv_store" on kv_store for all using (true) with check (true);
-create policy "Allow all on activity_log" on activity_log for all using (true) with check (true);
-create policy "Allow all on chat_messages" on chat_messages for all using (true) with check (true);
+create policy "Stories are publicly readable"
+  on stories for select using (true);
+
+create policy "Anyone can create sessions"
+  on game_sessions for insert with check (true);
+
+create policy "Sessions are readable"
+  on game_sessions for select using (true);
+
+create policy "Stats are publicly readable"
+  on daily_stats for select using (true);
+
+create policy "Newspapers are publicly readable"
+  on newspapers for select using (true);

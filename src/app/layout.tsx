@@ -1,28 +1,20 @@
-import type { Metadata, Viewport } from "next";
-import "./globals.css";
+import type { Metadata, Viewport } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "Frogface — Life OS",
-  description: "Персональная операционная система жизни. RPG-движок. Студия агентов. Командный центр.",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Frogface",
-  },
-  icons: {
-    icon: [
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-      { url: "/icon.svg", type: "image/svg+xml" },
-    ],
-    apple: "/apple-touch-icon.png",
+  title: '8FATES — Wordle для моральных дилемм',
+  description:
+    'Ежедневная интерактивная история. Твои выборы. AI-концовка. Уникальная статистика. Каждый день новая дилемма.',
+  openGraph: {
+    title: '8FATES — Wordle для моральных дилемм',
+    description: 'Одна история в день. 7 выборов. 8 судеб. А ты на что способен?',
+    type: 'website',
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#8b5cf6",
-  width: "device-width",
+  themeColor: '#8B5CF6',
+  width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
@@ -35,14 +27,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru" className="dark">
-      <body className="antialiased">
-        {children}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js"))`,
-          }}
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+          rel="stylesheet"
         />
-      </body>
+      </head>
+      <body className="antialiased min-h-screen">{children}</body>
     </html>
   );
 }
