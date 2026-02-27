@@ -14,6 +14,7 @@ import {
   BookOpen,
   ListTodo,
   Sparkles,
+  Sun,
   FlaskConical,
   LogOut,
   Menu,
@@ -23,6 +24,7 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "Штаб", icon: Home, description: "Главный экран" },
+  { href: "/morning", label: "Планёрка", icon: Sun, description: "Утренний ритуал" },
   { href: "/quests", label: "Квесты", icon: ScrollText, description: "Журнал квестов" },
   { href: "/player", label: "Игрок", icon: Gamepad2, description: "Статы и скиллы" },
   { href: "/projects", label: "Проекты", icon: FolderKanban, description: "Доска миссий" },

@@ -17,6 +17,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PixelHero } from "@/components/pixel-hero";
 
 interface PlayerData {
   level: number;
@@ -24,6 +25,7 @@ interface PlayerData {
   xp_to_next: number;
   gold: number;
   mana: number;
+  mana_max: number;
   chapter_name: string;
   day: number;
   quests_completed: number;
@@ -76,19 +78,29 @@ export default function HQPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      {/* Header */}
+      {/* Header with pixel hero */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-text-bright">{greeting}, Архитектор</h1>
-          <p className="mt-1 text-sm text-text-dim">
-            {player.chapter_name || "Глава 1"} · День {player.day || 2}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="rounded-xl bg-gradient-to-br from-accent to-mana px-3 py-1.5">
-            <span className="text-sm font-bold text-white">Ур. {player.level}</span>
+        <div className="flex items-center gap-5">
+          <PixelHero
+            level={player.level}
+            mana={player.mana}
+            manaMax={player.mana_max || 100}
+            streak={2}
+          />
+          <div>
+            <h1 className="text-2xl font-bold text-text-bright">{greeting}, Архитектор</h1>
+            <p className="mt-1 text-sm text-text-dim">
+              {player.chapter_name || "Глава 1"} · День {player.day || 2}
+            </p>
           </div>
         </div>
+        <a
+          href="/morning"
+          className="flex items-center gap-1.5 rounded-xl border border-accent/30 bg-accent/10 px-4 py-2 text-xs font-medium text-accent transition-colors hover:bg-accent/20"
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          Планёрка
+        </a>
       </div>
 
       {/* Stats */}
