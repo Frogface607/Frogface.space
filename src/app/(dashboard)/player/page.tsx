@@ -1,316 +1,265 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Shield,
   Flame,
-  Brain,
-  Eye,
-  Mic,
-  Code,
-  Palette,
-  TrendingUp,
   Star,
   Trophy,
-  Sparkles,
-  Music,
-  RefreshCw,
+  Zap,
+  TrendingUp,
   Swords,
+  Heart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface PlayerState {
-  level: number;
-  xp: number;
-  xp_to_next: number;
-  gold: number;
-  mana: number;
-  mana_max: number;
-  quests_completed: number;
-  achievements: string[];
+interface Achievement {
+  id: string; name: string; icon: string; desc: string;
+  condition: string; xp: number; rarity: string;
+  unlocked: boolean; date?: string;
 }
 
-interface RpgQuest {
-  id: string;
-  title: string;
-  project: string;
-  xp: number;
-  priority: "normal" | "critical" | "boss";
-  progress: number;
-  done: boolean;
+interface Buff {
+  id: string; name: string; icon: string; effect: string;
+  type: "buff" | "debuff"; duration: string; trigger: string;
 }
 
-const FALLBACK_PLAYER: PlayerState = {
-  level: 7, xp: 2847, xp_to_next: 5000, gold: 178, mana: 72, mana_max: 100,
-  quests_completed: 8, achievements: ["first_blood", "architect", "voice_master", "solo_preneur"],
+interface PlayerData {
+  level: number; xp: number; xp_to_next: number;
+  gold: number; mana: number; mana_max: number;
+  quests_completed: number; title: string; day: number;
+  chapter_name: string;
+}
+
+const RARITY: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  common: { label: "Обычная", color: "text-text-dim", bg: "bg-text-dim/10", border: "border-text-dim/20" },
+  rare: { label: "Редкая", color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20" },
+  epic: { label: "Эпическая", color: "text-violet-400", bg: "bg-violet-400/10", border: "border-violet-400/20" },
+  legendary: { label: "Легендарная", color: "text-gold", bg: "bg-gold/10", border: "border-gold/20" },
 };
 
-const CORE_STATS = [
-  { name: "Видение", value: 92, icon: Eye, color: "text-accent", bg: "bg-accent" },
-  { name: "Архитектура", value: 88, icon: Brain, color: "text-mana", bg: "bg-mana" },
-  { name: "Голос", value: 85, icon: Mic, color: "text-gold", bg: "bg-gold" },
-  { name: "Созидание", value: 90, icon: Palette, color: "text-xp", bg: "bg-xp" },
-  { name: "Код", value: 65, icon: Code, color: "text-mana-dim", bg: "bg-mana-dim" },
-  { name: "Продажи", value: 45, icon: TrendingUp, color: "text-hp", bg: "bg-hp" },
-];
-
-const SKILLS = [
-  { name: "AI-архитектура", level: 7, xp: 2847, maxXp: 5000 },
-  { name: "Продуктовый дизайн", level: 6, xp: 3200, maxXp: 4000 },
-  { name: "Музыка", level: 8, xp: 7500, maxXp: 8000 },
-  { name: "Бренд-билдинг", level: 5, xp: 2100, maxXp: 3500 },
-  { name: "Контент-стратегия", level: 4, xp: 1800, maxXp: 3000 },
-  { name: "Продажи", level: 3, xp: 900, maxXp: 2500 },
-  { name: "Фронтенд", level: 4, xp: 1600, maxXp: 3000 },
-  { name: "Системное мышление", level: 7, xp: 4200, maxXp: 5000 },
-];
-
-const ALL_ACHIEVEMENTS = [
-  { id: "first_blood", name: "Первая кровь", desc: "Первый платящий пользователь", icon: "💰" },
-  { id: "architect", name: "Архитектор", desc: "Построил полную AI-агентную систему", icon: "🏗️" },
-  { id: "voice_master", name: "Голос разума", desc: "100 голосовых обработано", icon: "🎙️" },
-  { id: "solo_preneur", name: "Соло-пренёр", desc: "Запустил продукт без команды", icon: "🐺" },
-  { id: "pipeline_master", name: "Конвейер", desc: "Сгенерировал 100 единиц контента", icon: "⚡" },
-  { id: "gold_rush", name: "Золотая лихорадка", desc: "Достичь 500K MRR", icon: "🏆" },
-  { id: "game_master", name: "Гейм-мастер", desc: "Завершить Главу 1", icon: "🎮" },
-  { id: "freedom", name: "Свобода", desc: "3 месяца пассивного дохода", icon: "🌊" },
-  { id: "wanderer", name: "Странник", desc: "Работать из 5 стран", icon: "✈️" },
-  { id: "cursor_bridge", name: "Мостостроитель", desc: "Настроить Moltbot ↔ Cursor мост", icon: "🌉" },
-];
-
 export default function PlayerPage() {
-  const [player, setPlayer] = useState<PlayerState>(FALLBACK_PLAYER);
-  const [quests, setQuests] = useState<RpgQuest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [player, setPlayer] = useState<PlayerData | null>(null);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [buffs, setBuffs] = useState<Buff[]>([]);
+  const [streaks, setStreaks] = useState<Record<string, number>>({});
+  const [tab, setTab] = useState<"achievements" | "buffs" | "streaks">("achievements");
 
-  const fetchData = useCallback(async () => {
-    try {
-      const res = await fetch("/api/rpg");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.player) setPlayer(data.player);
-        if (data.quests) setQuests(data.quests);
-      }
-    } catch { /* use fallback */ }
-    setLoading(false);
+  useEffect(() => {
+    fetch("/api/player")
+      .then((r) => r.json())
+      .then((data) => {
+        setPlayer(data.player);
+        setAchievements(data.achievements || []);
+        setBuffs(data.buffs || []);
+        setStreaks(data.streaks || {});
+      })
+      .catch(() => {});
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  if (!player) return <div className="flex min-h-[60vh] items-center justify-center"><Zap className="h-6 w-6 animate-pulse text-accent" /></div>;
 
-  const xpPct = Math.min((player.xp / player.xp_to_next) * 100, 100);
+  const xpPct = player.xp_to_next ? (player.xp / player.xp_to_next) * 100 : 50;
+  const unlockedCount = achievements.filter((a) => a.unlocked).length;
+  const totalXpFromAch = achievements.filter((a) => a.unlocked).reduce((s, a) => s + a.xp, 0);
 
   return (
     <div className="animate-fade-in space-y-6">
-      {/* Character header */}
-      <div className="flex flex-col gap-4 rounded-xl border border-border bg-bg-card p-4 sm:flex-row sm:items-start sm:gap-6 lg:p-6">
-        <div className="flex items-center gap-4 sm:block">
-          <div className="relative">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-accent via-mana to-xp sm:h-24 sm:w-24">
-              <Shield className="h-8 w-8 text-white sm:h-12 sm:w-12" />
-            </div>
-            <div className="absolute -bottom-1 -right-1 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-bg-deep">
-              Ур.{player.level}
-            </div>
+      {/* Character Card */}
+      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-bg-card p-5 sm:flex-row sm:items-center sm:gap-6">
+        <div className="relative">
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-accent via-mana to-xp">
+            <Shield className="h-10 w-10 text-white" />
           </div>
-          <div className="sm:hidden">
-            <h1 className="text-lg font-bold text-text-bright">Sergey Orlov</h1>
-            <p className="text-xs text-accent">Архитектор · Соло-создатель</p>
+          <div className="absolute -bottom-1 -right-1 rounded-full bg-gold px-2.5 py-0.5 text-xs font-bold text-bg-deep">
+            {player.level}
           </div>
         </div>
-        <div className="flex-1">
-          <div className="hidden sm:flex sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-text-bright">Sergey Orlov</h1>
-              <p className="text-sm text-accent">Архитектор · Соло-создатель · Строитель систем</p>
-            </div>
-            <button
-              onClick={fetchData}
-              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[10px] text-text-dim hover:text-text"
-            >
-              <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
-              Sync
-            </button>
-          </div>
-          <p className="text-xs text-text-dim italic">
-            &quot;Я не хочу спасать. Я не хочу тушить. Я хочу строить.&quot;
-          </p>
 
-          {/* XP progress to next level */}
-          <div className="mt-3 rounded-lg border border-accent/20 bg-accent/5 p-3">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-text-dim">До уровня {player.level + 1}</span>
-              <span className="font-mono text-accent">{player.xp} / {player.xp_to_next} XP</span>
+        <div className="flex-1 space-y-3">
+          <div>
+            <h1 className="text-xl font-bold text-text-bright">Sergey Orlov</h1>
+            <p className="text-sm text-accent">{player.title || "Архитектор"} · {player.chapter_name || "Глава 1"} · День {player.day || 2}</p>
+          </div>
+
+          {/* XP Bar */}
+          <div>
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="text-text-dim">XP до уровня {player.level + 1}</span>
+              <span className="font-mono text-accent">{player.xp} / {player.xp_to_next}</span>
             </div>
-            <div className="mt-1.5 h-2.5 rounded-full bg-bg-deep">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-accent to-xp transition-all"
-                style={{ width: `${xpPct}%` }}
-              />
+            <div className="mt-1 h-2.5 rounded-full bg-bg-deep">
+              <div className="h-full rounded-full bg-gradient-to-r from-accent to-xp" style={{ width: `${xpPct}%` }} />
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-            <ResourceBar label="Gold (MRR)" value={player.gold} max={500} suffix="K ₽" color="bg-gold" icon="💰" />
-            <ResourceBar label="Mana" value={player.mana} max={player.mana_max} color="bg-mana" icon="⚡" />
-            <ResourceBar label="Квесты" value={player.quests_completed} max={50} color="bg-xp" icon="⚔️" />
+          {/* Resources */}
+          <div className="grid grid-cols-3 gap-3">
+            <ResourcePill icon="💰" label="Gold" value={`${player.gold}K₽`} color="text-gold" />
+            <ResourcePill icon="⚡" label="Mana" value={`${player.mana}/${player.mana_max}`} color="text-mana" />
+            <ResourcePill icon="⚔️" label="Квесты" value={String(player.quests_completed)} color="text-xp" />
           </div>
         </div>
-        <div className="rounded-lg border border-accent/20 bg-accent/5 p-3 sm:w-56 sm:p-4">
-          <h3 className="flex items-center gap-1.5 text-xs font-semibold text-accent">
-            <Sparkles className="h-3 w-3" />
-            Кредо
-          </h3>
-          <div className="mt-2 flex gap-3 sm:block sm:space-y-1">
-            <p className="text-xs text-text">🗡️ Свобода</p>
-            <p className="text-xs text-text">🛡️ Уверенность</p>
-            <p className="text-xs text-text">👑 Уважение</p>
-          </div>
+
+        {/* Streaks */}
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-col sm:gap-2">
+          <StreakBadge icon="🔥" label="Продуктивность" value={streaks.productive_days || 0} best={streaks.best_productive || 0} />
+          <StreakBadge icon="🚭" label="Без сигарет" value={streaks.smoke_free || 0} best={streaks.best_smoke_free || 0} />
+          <StreakBadge icon="💪" label="Тренировки" value={streaks.workout || 0} best={0} />
         </div>
       </div>
 
-      {/* Active quests from RPG API */}
-      {quests.length > 0 && (
-        <div className="rounded-xl border border-border bg-bg-card p-4 lg:p-5">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-bright">
-            <Swords className="h-4 w-4 text-accent" />
-            Активные квесты ({quests.length})
-          </h2>
-          <div className="space-y-2">
-            {quests.slice(0, 5).map((q) => (
-              <div key={q.id} className="flex items-center gap-3 rounded-lg border border-border/30 bg-bg-deep/30 px-3 py-2">
-                <span className={cn(
-                  "rounded px-1.5 py-0.5 text-[10px] font-medium",
-                  q.priority === "boss" ? "bg-gold/20 text-gold" :
-                  q.priority === "critical" ? "bg-hp/20 text-hp" : "bg-mana/20 text-mana",
-                )}>
-                  {q.priority === "boss" ? "БОСС" : q.priority === "critical" ? "КРИТ" : q.project}
-                </span>
-                <span className="flex-1 text-xs text-text">{q.title}</span>
-                <span className="text-[10px] text-xp">+{q.xp} XP</span>
-                {q.progress > 0 && (
-                  <div className="h-1 w-16 rounded-full bg-bg-deep">
-                    <div className="h-full rounded-full bg-accent" style={{ width: `${q.progress}%` }} />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Tabs */}
+      <div className="flex gap-1 rounded-xl bg-bg-deep p-1">
+        {([
+          { key: "achievements", label: `Ачивки (${unlockedCount}/${achievements.length})`, icon: Trophy },
+          { key: "buffs", label: "Баффы и дебаффы", icon: Zap },
+          { key: "streaks", label: "Стрики", icon: Flame },
+        ] as const).map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium transition-colors",
+              tab === key ? "bg-bg-card text-text-bright shadow" : "text-text-dim hover:text-text",
+            )}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {label}
+          </button>
+        ))}
+      </div>
 
-      <div className="grid gap-4 lg:grid-cols-3 lg:gap-6">
-        <div className="rounded-xl border border-border bg-bg-card p-4 lg:p-5">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-bright">
-            <Flame className="h-4 w-4 text-hp" />
-            Основные статы
-          </h2>
-          <div className="space-y-3">
-            {CORE_STATS.map((stat) => (
-              <div key={stat.name} className="flex items-center gap-3">
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                <span className="w-24 text-xs text-text-dim">{stat.name}</span>
-                <div className="h-2 flex-1 rounded-full bg-bg-deep">
-                  <div className={`h-full rounded-full ${stat.bg}`} style={{ width: `${stat.value}%` }} />
-                </div>
-                <span className="w-8 text-right text-xs font-mono text-text-dim">{stat.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-border bg-bg-card p-4 lg:p-5">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-bright">
-            <Star className="h-4 w-4 text-gold" />
-            Навыки
-          </h2>
-          <div className="space-y-2.5">
-            {SKILLS.map((skill) => (
-              <div key={skill.name}>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-text">{skill.name}</span>
-                  <span className="text-[10px] text-accent">Ур.{skill.level}</span>
-                </div>
-                <div className="mt-1 h-1.5 rounded-full bg-bg-deep">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-accent to-mana"
-                    style={{ width: `${(skill.xp / skill.maxXp) * 100}%` }}
-                  />
-                </div>
-                <p className="mt-0.5 text-right text-[9px] text-text-dim">{skill.xp}/{skill.maxXp} XP</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-border bg-bg-card p-4 lg:p-5">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-bright">
-            <Trophy className="h-4 w-4 text-gold" />
-            Достижения
-          </h2>
-          <div className="space-y-2">
-            {ALL_ACHIEVEMENTS.map((ach) => {
-              const unlocked = player.achievements.includes(ach.id);
+      {/* Achievements */}
+      {tab === "achievements" && (
+        <div className="space-y-2">
+          <p className="text-xs text-text-dim">+{totalXpFromAch} XP от ачивок</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {achievements.map((a) => {
+              const r = RARITY[a.rarity] || RARITY.common;
               return (
                 <div
-                  key={ach.id}
+                  key={a.id}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg border px-3 py-2",
-                    unlocked ? "border-gold/30 bg-gold/5" : "border-border/30 bg-bg-deep/30 opacity-50",
+                    "flex items-center gap-3 rounded-xl border p-3 transition-all",
+                    a.unlocked ? `${r.border} ${r.bg}` : "border-border/20 bg-bg-deep/30 opacity-40 grayscale",
                   )}
                 >
-                  <span className="text-lg">{ach.icon}</span>
-                  <div>
-                    <p className={cn("text-xs font-medium", unlocked ? "text-text-bright" : "text-text-dim")}>
-                      {ach.name}
-                    </p>
-                    <p className="text-[10px] text-text-dim">{ach.desc}</p>
+                  <span className="text-2xl">{a.icon}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className={cn("text-sm font-medium", a.unlocked ? "text-text-bright" : "text-text-dim")}>{a.name}</span>
+                      <span className={cn("rounded px-1.5 py-0.5 text-[9px] font-medium", r.color, r.bg)}>{r.label}</span>
+                    </div>
+                    <p className="text-[10px] text-text-dim">{a.desc}</p>
+                    {!a.unlocked && <p className="mt-0.5 text-[10px] text-text-dim/50 italic">{a.condition}</p>}
+                    {a.unlocked && a.date && <p className="mt-0.5 text-[10px] text-xp">+{a.xp} XP · {a.date}</p>}
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="rounded-xl border border-border bg-bg-card p-4 lg:p-5">
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-bright">
-          <Music className="h-4 w-4 text-mana" />
-          Стиль игры
-        </h2>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-          <PlaystyleTag label="Архитектор" desc="Видит систему целиком" />
-          <PlaystyleTag label="Соло-пренёр" desc="AI вместо команды" />
-          <PlaystyleTag label="Голос" desc="Думает голосом в движении" />
-          <PlaystyleTag label="Спринтер" desc="Главы по 30 дней, не марафоны" />
+      {/* Buffs & Debuffs */}
+      {tab === "buffs" && (
+        <div className="space-y-4">
+          <div>
+            <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-xp">
+              <Star className="h-4 w-4" /> Баффы
+            </h3>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {buffs.filter((b) => b.type === "buff").map((b) => (
+                <BuffCard key={b.id} buff={b} />
+              ))}
+            </div>
+          </div>
+          <div>
+            <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-hp">
+              <Heart className="h-4 w-4" /> Дебаффы
+            </h3>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {buffs.filter((b) => b.type === "debuff").map((b) => (
+                <BuffCard key={b.id} buff={b} />
+              ))}
+            </div>
+          </div>
         </div>
+      )}
+
+      {/* Streaks */}
+      {tab === "streaks" && (
+        <div className="space-y-3">
+          <div className="rounded-xl border border-border bg-bg-card p-4">
+            <h3 className="text-sm font-semibold text-text-bright">Как работают стрики</h3>
+            <p className="mt-1 text-xs text-text-dim leading-relaxed">
+              Каждый день когда ты продуктивен — стрик растёт. Стрик даёт +5% XP за каждый день.
+              Пропустил день — стрик сбрасывается. Рекорд сохраняется навсегда.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <StreakCard icon="🔥" name="Продуктивность" current={streaks.productive_days || 0} best={streaks.best_productive || 0} desc="Дни с хотя бы 1 завершённой задачей" bonus="+5% XP за каждый день" />
+            <StreakCard icon="🚭" name="Без сигарет" current={streaks.smoke_free || 0} best={streaks.best_smoke_free || 0} desc="Дни без единой сигареты" bonus="+1 Mana max за каждые 7 дней" />
+            <StreakCard icon="💪" name="Тренировки" current={streaks.workout || 0} best={0} desc="Дни с физической активностью" bonus="+30% XP в день тренировки" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ResourcePill({ icon, label, value, color }: { icon: string; label: string; value: string; color: string }) {
+  return (
+    <div className="flex items-center gap-1.5 rounded-lg border border-border/30 bg-bg-deep/30 px-2.5 py-1.5">
+      <span className="text-sm">{icon}</span>
+      <div>
+        <p className="text-[10px] text-text-dim">{label}</p>
+        <p className={cn("text-xs font-bold", color)}>{value}</p>
       </div>
     </div>
   );
 }
 
-function ResourceBar({
-  label, value, max, suffix = "", color, icon,
-}: {
-  label: string; value: number; max: number; suffix?: string; color: string; icon: string;
-}) {
+function StreakBadge({ icon, label, value, best }: { icon: string; label: string; value: number; best: number }) {
   return (
-    <div>
-      <div className="flex items-center justify-between text-xs">
-        <span className="flex items-center gap-1 text-text-dim">{icon} {label}</span>
-        <span className="font-mono text-text-bright">{value}{suffix} / {max}{suffix}</span>
-      </div>
-      <div className="mt-1.5 h-2.5 rounded-full bg-bg-deep">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${(value / max) * 100}%` }} />
+    <div className="rounded-lg border border-border/30 bg-bg-deep/30 px-2.5 py-1.5 text-center">
+      <span className="text-sm">{icon}</span>
+      <p className="text-lg font-bold text-text-bright">{value}</p>
+      <p className="text-[9px] text-text-dim">{label}</p>
+      {best > 0 && <p className="text-[9px] text-text-dim/50">рекорд: {best}</p>}
+    </div>
+  );
+}
+
+function BuffCard({ buff }: { buff: Buff }) {
+  const isBuff = buff.type === "buff";
+  return (
+    <div className={cn(
+      "flex items-start gap-3 rounded-xl border p-3",
+      isBuff ? "border-xp/20 bg-xp/5" : "border-hp/20 bg-hp/5",
+    )}>
+      <span className="text-xl">{buff.icon}</span>
+      <div>
+        <p className={cn("text-sm font-medium", isBuff ? "text-xp" : "text-hp")}>{buff.name}</p>
+        <p className="text-[10px] text-text-dim">{buff.effect}</p>
+        <p className="mt-1 text-[10px] text-text-dim/50">Триггер: {buff.trigger}</p>
+        <p className="text-[10px] text-text-dim/30">Длительность: {buff.duration}</p>
       </div>
     </div>
   );
 }
 
-function PlaystyleTag({ label, desc }: { label: string; desc: string }) {
+function StreakCard({ icon, name, current, best, desc, bonus }: { icon: string; name: string; current: number; best: number; desc: string; bonus: string }) {
   return (
-    <div className="rounded-lg border border-accent/30 bg-accent/5 p-3">
-      <p className="text-xs font-medium text-text-bright">{label}</p>
-      <p className="mt-0.5 text-[10px] text-text-dim">{desc}</p>
+    <div className="rounded-xl border border-border bg-bg-card p-4 text-center">
+      <span className="text-2xl">{icon}</span>
+      <p className="mt-1 text-sm font-semibold text-text-bright">{name}</p>
+      <p className="mt-2 text-3xl font-bold text-accent">{current}</p>
+      <p className="text-[10px] text-text-dim">дней подряд</p>
+      {best > 0 && <p className="text-[10px] text-gold">рекорд: {best}</p>}
+      <p className="mt-2 text-[10px] text-text-dim/70">{desc}</p>
+      <p className="mt-1 text-[10px] text-xp">{bonus}</p>
     </div>
   );
 }

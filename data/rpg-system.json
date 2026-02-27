@@ -1,0 +1,335 @@
+{
+  "achievements": [
+    {
+      "id": "first_blood",
+      "name": "Первая кровь",
+      "icon": "💰",
+      "desc": "Первый платящий клиент",
+      "condition": "Получить первую оплату",
+      "xp": 500,
+      "rarity": "epic",
+      "unlocked": true,
+      "date": "2026-02-20"
+    },
+    {
+      "id": "architect",
+      "name": "Архитектор",
+      "icon": "🏗️",
+      "desc": "Построил AI-агентную систему",
+      "condition": "Запустить Frogface.space с 5+ агентами",
+      "xp": 300,
+      "rarity": "epic",
+      "unlocked": true,
+      "date": "2026-02-23"
+    },
+    {
+      "id": "voice_master",
+      "name": "Голос Разума",
+      "icon": "🎙️",
+      "desc": "Наговорил 100 голосовых потоков",
+      "condition": "100 голосовых сообщений",
+      "xp": 200,
+      "rarity": "rare",
+      "unlocked": true,
+      "date": "2026-02-23"
+    },
+    {
+      "id": "solo_preneur",
+      "name": "Соло-пренёр",
+      "icon": "🐺",
+      "desc": "Запустил SaaS без команды",
+      "condition": "Запустить продукт в одиночку",
+      "xp": 400,
+      "rarity": "epic",
+      "unlocked": true,
+      "date": "2026-02-20"
+    },
+    {
+      "id": "cursor_bridge",
+      "name": "Мостостроитель",
+      "icon": "🌉",
+      "desc": "Связал AI-системы в единую студию",
+      "condition": "Настроить Cursor + MaxClaw + ChatGPT",
+      "xp": 300,
+      "rarity": "rare",
+      "unlocked": true,
+      "date": "2026-02-24"
+    },
+    {
+      "id": "night_owl",
+      "name": "Ночная сова",
+      "icon": "🦉",
+      "desc": "Продуктивная сессия после полуночи",
+      "condition": "Завершить 3+ задачи между 00:00 и 06:00",
+      "xp": 150,
+      "rarity": "common",
+      "unlocked": true,
+      "date": "2026-02-24"
+    },
+    {
+      "id": "wanderer",
+      "name": "Странник",
+      "icon": "✈️",
+      "desc": "Работать из другой страны",
+      "condition": "Продуктивная сессия из-за рубежа",
+      "xp": 200,
+      "rarity": "rare",
+      "unlocked": true,
+      "date": "2026-02-23"
+    },
+    {
+      "id": "content_machine",
+      "name": "Контент-машина",
+      "icon": "⚡",
+      "desc": "Создать 10 единиц контента за день",
+      "condition": "10 постов/скриптов за сутки",
+      "xp": 300,
+      "rarity": "rare",
+      "unlocked": false
+    },
+    {
+      "id": "gold_rush",
+      "name": "Золотая лихорадка",
+      "icon": "🏆",
+      "desc": "MRR достиг 500K",
+      "condition": "Gold >= 500",
+      "xp": 1000,
+      "rarity": "legendary",
+      "unlocked": false
+    },
+    {
+      "id": "ten_paying",
+      "name": "Десятка",
+      "icon": "🔟",
+      "desc": "10 платящих клиентов MyReply",
+      "condition": "10 активных подписок",
+      "xp": 800,
+      "rarity": "epic",
+      "unlocked": false
+    },
+    {
+      "id": "chapter_one",
+      "name": "Гейм-мастер",
+      "icon": "🎮",
+      "desc": "Завершить Главу 1: Фундамент",
+      "condition": "Все боссы Главы 1 побеждены",
+      "xp": 1500,
+      "rarity": "legendary",
+      "unlocked": false
+    },
+    {
+      "id": "streak_7",
+      "name": "Неделя огня",
+      "icon": "🔥",
+      "desc": "7 дней подряд продуктивности",
+      "condition": "streak >= 7",
+      "xp": 300,
+      "rarity": "rare",
+      "unlocked": false
+    },
+    {
+      "id": "streak_30",
+      "name": "Месяц силы",
+      "icon": "💎",
+      "desc": "30 дней подряд без пропуска",
+      "condition": "streak >= 30",
+      "xp": 1000,
+      "rarity": "legendary",
+      "unlocked": false
+    },
+    {
+      "id": "clean_lungs",
+      "name": "Чистые лёгкие",
+      "icon": "🌬️",
+      "desc": "3 дня без сигарет",
+      "condition": "smoke_free_streak >= 3",
+      "xp": 200,
+      "rarity": "rare",
+      "unlocked": false
+    },
+    {
+      "id": "iron_lungs",
+      "name": "Железные лёгкие",
+      "icon": "🫁",
+      "desc": "30 дней без сигарет",
+      "condition": "smoke_free_streak >= 30",
+      "xp": 800,
+      "rarity": "epic",
+      "unlocked": false
+    },
+    {
+      "id": "first_video",
+      "name": "Камера, мотор!",
+      "icon": "🎬",
+      "desc": "Опубликовать первое видео на YouTube",
+      "condition": "Видео на канале",
+      "xp": 500,
+      "rarity": "epic",
+      "unlocked": false
+    },
+    {
+      "id": "freedom",
+      "name": "Свобода",
+      "icon": "🌊",
+      "desc": "3 месяца пассивного дохода > расходов",
+      "condition": "passive_income > expenses за 90 дней",
+      "xp": 2000,
+      "rarity": "legendary",
+      "unlocked": false
+    }
+  ],
+
+  "buffs": [
+    {
+      "id": "morning_walk",
+      "name": "Утренняя прогулка",
+      "icon": "🚶",
+      "effect": "+20% Mana regen",
+      "type": "buff",
+      "duration": "day",
+      "trigger": "Прогулка утром > 20 мин"
+    },
+    {
+      "id": "workout",
+      "name": "Тренировка",
+      "icon": "💪",
+      "effect": "+30% XP за задачи, +1 Mana",
+      "type": "buff",
+      "duration": "day",
+      "trigger": "Любая физическая активность > 30 мин"
+    },
+    {
+      "id": "good_sleep",
+      "name": "Крепкий сон",
+      "icon": "😴",
+      "effect": "+2 Mana, +10% XP",
+      "type": "buff",
+      "duration": "day",
+      "trigger": "Сон 7-9 часов"
+    },
+    {
+      "id": "meditation",
+      "name": "Ясный ум",
+      "icon": "🧘",
+      "effect": "+15% к качеству решений",
+      "type": "buff",
+      "duration": "day",
+      "trigger": "Медитация или осознанная пауза > 10 мин"
+    },
+    {
+      "id": "flow_state",
+      "name": "Состояние потока",
+      "icon": "🌊",
+      "effect": "x2 XP за следующую задачу",
+      "type": "buff",
+      "duration": "task",
+      "trigger": "3+ задачи подряд без перерыва"
+    },
+    {
+      "id": "streak_bonus",
+      "name": "Серия побед",
+      "icon": "🔥",
+      "effect": "+5% XP за каждый день стрика",
+      "type": "buff",
+      "duration": "permanent",
+      "trigger": "Стрик > 3 дней"
+    },
+    {
+      "id": "smoke",
+      "name": "Дым",
+      "icon": "🚬",
+      "effect": "-1 Mana, -10% XP на 2 часа",
+      "type": "debuff",
+      "duration": "2h",
+      "trigger": "Сигарета"
+    },
+    {
+      "id": "doomscroll",
+      "name": "Залип",
+      "icon": "📱",
+      "effect": "-2 Mana, потеря фокуса",
+      "type": "debuff",
+      "duration": "day",
+      "trigger": "Соцсети > 1 часа без цели"
+    },
+    {
+      "id": "bad_sleep",
+      "name": "Недосып",
+      "icon": "😵",
+      "effect": "-2 Mana, -20% XP",
+      "type": "debuff",
+      "duration": "day",
+      "trigger": "Сон < 5 часов"
+    },
+    {
+      "id": "overwork",
+      "name": "Перегрев",
+      "icon": "🔥",
+      "effect": "-3 Mana, риск выгорания",
+      "type": "debuff",
+      "duration": "day",
+      "trigger": "Работа > 10 часов без перерыва"
+    },
+    {
+      "id": "junk_food",
+      "name": "Мусорная еда",
+      "icon": "🍔",
+      "effect": "-1 Mana через 2 часа",
+      "type": "debuff",
+      "duration": "2h",
+      "trigger": "Фастфуд / сладкое на пустой желудок"
+    },
+    {
+      "id": "alcohol",
+      "name": "Хмель",
+      "icon": "🍺",
+      "effect": "-2 Mana, -30% XP до конца дня. Утром: дебафф Недосып",
+      "type": "debuff",
+      "duration": "day",
+      "trigger": "> 2 бокалов"
+    },
+    {
+      "id": "nature",
+      "name": "Сила природы",
+      "icon": "🌴",
+      "effect": "+2 Mana, снимает 1 дебафф",
+      "type": "buff",
+      "duration": "day",
+      "trigger": "Время на природе > 1 час (пляж, парк, горы)"
+    },
+    {
+      "id": "cold_shower",
+      "name": "Ледяной душ",
+      "icon": "🧊",
+      "effect": "+1 Mana, снимает Недосып",
+      "type": "buff",
+      "duration": "day",
+      "trigger": "Холодный душ"
+    }
+  ],
+
+  "streaks": {
+    "productive_days": 2,
+    "smoke_free": 0,
+    "workout": 0,
+    "best_productive": 2,
+    "best_smoke_free": 0
+  },
+
+  "rarity_colors": {
+    "common": { "label": "Обычная", "color": "text-text-dim", "bg": "bg-text-dim/10", "border": "border-text-dim/20" },
+    "rare": { "label": "Редкая", "color": "text-blue-400", "bg": "bg-blue-400/10", "border": "border-blue-400/20" },
+    "epic": { "label": "Эпическая", "color": "text-violet-400", "bg": "bg-violet-400/10", "border": "border-violet-400/20" },
+    "legendary": { "label": "Легендарная", "color": "text-gold", "bg": "bg-gold/10", "border": "border-gold/20" }
+  },
+
+  "level_titles": {
+    "1": "Новичок",
+    "3": "Искатель",
+    "5": "Строитель",
+    "7": "Архитектор",
+    "10": "Мастер",
+    "15": "Легенда",
+    "20": "Демиург"
+  }
+}
