@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "regions": ["fra1"],
+  "env": {
+    "OPENROUTER_API_KEY": "@openrouter-api-key"
+  }
+}
