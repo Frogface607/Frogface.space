@@ -421,9 +421,8 @@ export default function MindmapPage() {
                 style={{
                   borderColor: `${node.color}30`,
                   boxShadow: selected?.id === node.id
-                    ? `0 0 20px ${node.color}30`
+                    ? `0 0 20px ${node.color}30, 0 0 0 1px ${node.color}60`
                     : `0 0 8px ${node.color}10`,
-                  ringColor: node.color,
                 }}
               >
                 <div className="flex items-center gap-1.5">
