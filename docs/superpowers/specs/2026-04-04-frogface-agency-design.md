@@ -12,6 +12,38 @@ The agency starts as a tiny garage with 3 employees and grows into a corporation
 
 **Core philosophy:** "Your work becomes an interesting quest."
 
+**Founder:** Sergey ("Boss" — all frogs call him Boss, never Architect)
+**Location:** Bangkok, April 2026. Solo month — window for superboosting everything.
+**Work hours:** Until 16:20 — agency projects. After 16:20 — WIZL (separate, not in agency).
+
+## Autonomy Levels
+
+Three tiers of decision-making:
+
+| Level | What | Example | Boss involvement |
+|---|---|---|---|
+| **Autopilot** | Bugs, technical fixes, routine ops | Kvax fixes Edison API bug | None — just a log entry |
+| **Tinder-approve** | Content, posts, proposals, artifacts | Lilypad wrote a TG post for Edison | Swipe yes/no + optional comment |
+| **Conversation** | Strategy, priorities, direction changes | Sage proposes shifting focus to delivery | Full discussion, Boss decides |
+
+Agents can spawn sub-agents for their tasks. Hierarchy of management.
+
+## Priority Focus (April 2026)
+
+1. **Edison Marketing** — #1 priority. Delivery launch, content, TG channels, ads
+2. **Edison Delivery** — Own couriers (collab with Sergey Mikhno), no Yandex.Eda (60% commission = no). PWA with courier tracking, Telegram integration. 2+ restaurants ready to test
+3. **MyReply Launch** — Promo codes tomorrow to: Masha, Mikhno, Sasha. Via frog-face channel
+4. **Frogface Agency** — This system. Command center for everything
+
+## Key Departments
+
+| Department | Priority | Focus |
+|---|---|---|
+| **Marketing** | #1 | Content automation, posting, TG channels, ads, growth |
+| **Analytics + Forecasting** | #2 | Data-driven decisions, scenario planning, probability analysis |
+| **Tech** | #3 | Autonomous bug fixes, delivery PWA, integrations |
+| **Content** | #4 | Automated content pipeline — Boss approves strategies only |
+
 ## Architecture: Three Layers
 
 ### 1. Visual Layer (Frontend — Next.js PWA)
