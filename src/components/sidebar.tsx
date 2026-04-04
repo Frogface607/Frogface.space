@@ -28,7 +28,7 @@ const NAV = [
   { href: "/quests", label: "Квесты", icon: ScrollText, description: "Журнал квестов" },
   { href: "/player", label: "Игрок", icon: Gamepad2, description: "Статы и скиллы" },
   { href: "/projects", label: "Проекты", icon: FolderKanban, description: "Доска миссий" },
-  { href: "/studio", label: "Студия", icon: Building2, description: "Офис агентов" },
+  { href: "/agency", label: "Агентство", icon: Building2, description: "Frogface Agency" },
   { href: "/chronicle", label: "Летопись", icon: BookOpen, description: "Game Master" },
   { href: "/pipeline", label: "Конвейер", icon: Sparkles, description: "AI-контент" },
   { href: "/tasks", label: "Задачи", icon: ListTodo, description: "Очередь для Cursor" },
