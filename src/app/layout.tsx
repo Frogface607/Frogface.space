@@ -1,16 +1,17 @@
 import type { Metadata, Viewport } from 'next';
-import { Fraunces, Geist, JetBrains_Mono } from 'next/font/google';
+import { Playfair_Display, Geist, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
-const fraunces = Fraunces({
+const playfair = Playfair_Display({
   subsets: ['latin', 'cyrillic'],
   variable: '--font-display',
   display: 'swap',
-  axes: ['SOFT', 'opsz'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  style: ['normal', 'italic'],
 });
 
 const geist = Geist({
-  subsets: ['latin', 'cyrillic'],
+  subsets: ['latin'],
   variable: '--font-sans',
   display: 'swap',
 });
@@ -45,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="ru"
-      className={`${fraunces.variable} ${geist.variable} ${jetbrainsMono.variable}`}
+      className={`${playfair.variable} ${geist.variable} ${jetbrainsMono.variable}`}
     >
       <body className="antialiased">{children}</body>
     </html>

@@ -23,7 +23,7 @@
   --color-magic-purple: #7d5cff;
 
   /* Fonts — loaded via next/font in layout */
-  --font-display: "Fraunces", "Iowan Old Style", "Hoefler Text", Georgia, serif;
+  --font-display: "Playfair Display", "Iowan Old Style", "Hoefler Text", Georgia, serif;
   --font-sans: "Geist", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
@@ -52,11 +52,9 @@
     color: var(--color-canon-ink);
   }
 
-  /* Display text uses Fraunces with optical sizing for big headings */
+  /* Display text uses Playfair Display — high contrast editorial serif */
   h1, h2, h3, .font-display {
     font-family: var(--font-display);
-    font-feature-settings: "ss01", "ss02";
-    font-variation-settings: "SOFT" 50, "opsz" 144;
     letter-spacing: -0.02em;
   }
 }
