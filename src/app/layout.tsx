@@ -1,101 +1,53 @@
-import type { Metadata, Viewport } from "next";
-import "./globals.css";
+import type { Metadata, Viewport } from 'next';
+import { Fraunces, Geist, JetBrains_Mono } from 'next/font/google';
+import './globals.css';
 
-const SITE_URL = "https://frogface.space";
-const SITE_TITLE = "Frogface — Life OS";
-const SITE_DESC = "Персональная операционная система жизни. AI-агенты, RPG-движок, контент-конвейер, голосовое управление.";
+const fraunces = Fraunces({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-display',
+  display: 'swap',
+  axes: ['SOFT', 'opsz'],
+});
+
+const geist = Geist({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-mono',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: {
-    default: SITE_TITLE,
-    template: "%s | Frogface",
-  },
-  description: SITE_DESC,
-  manifest: "/manifest.json",
-  metadataBase: new URL(SITE_URL),
-  alternates: { canonical: "/" },
+  title: 'Frogface — болото',
+  description:
+    'Frogface — уставший предприниматель с нулём денег, пытается выбраться из болота. Сайт-пространство по которому можно ходить.',
   openGraph: {
-    type: "website",
-    locale: "ru_RU",
-    url: SITE_URL,
-    siteName: "Frogface",
-    title: SITE_TITLE,
-    description: SITE_DESC,
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Frogface Life OS" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: SITE_TITLE,
-    description: SITE_DESC,
-    images: ["/og.png"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Frogface",
-  },
-  icons: {
-    icon: [
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-      { url: "/icon.svg", type: "image/svg+xml" },
-    ],
-    apple: "/apple-touch-icon.png",
+    title: 'Frogface',
+    description: 'Cartoon swamp world by Серёжа Орлов.',
+    url: 'https://frogface.space',
+    siteName: 'Frogface',
+    locale: 'ru_RU',
+    type: 'website',
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#8b5cf6",
-  width: "device-width",
+  themeColor: '#0e1218',
+  width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  name: "Frogface Life OS",
-  url: SITE_URL,
-  description: SITE_DESC,
-  applicationCategory: "ProductivityApplication",
-  operatingSystem: "Web",
-  author: {
-    "@type": "Person",
-    name: "Sergey Orlov",
-  },
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "RUB",
-  },
-};
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className="dark">
-      <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-      </head>
-      <body className="antialiased">
-        {children}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js"))`,
-          }}
-        />
-      </body>
+    <html
+      lang="ru"
+      className={`${fraunces.variable} ${geist.variable} ${jetbrainsMono.variable}`}
+    >
+      <body className="antialiased">{children}</body>
     </html>
   );
 }
