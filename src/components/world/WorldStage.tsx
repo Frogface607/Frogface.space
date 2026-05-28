@@ -29,8 +29,11 @@ export function WorldStage({
   const appRef = useRef<Application | null>(null);
   const sceneContainerRef = useRef<Container | null>(null);
   const fireflyRef = useRef<FireflyEmitter | null>(null);
+  const parallaxTarget = useRef({ x: 0, y: 0 });
+  const parallaxCurrent = useRef({ x: 0, y: 0 });
   const [currentScene, setCurrentScene] = useState(initialScene);
   const [hoveredObject, setHoveredObject] = useState<WorldObject | null>(null);
+  const [showHints, setShowHints] = useState(true);
   const router = useRouter();
 
   // Init PIXI app
@@ -78,6 +81,18 @@ export function WorldStage({
         app.stage.addChild(fireflies.container);
         fireflyRef.current = fireflies;
 
+        // Parallax loop — smooth lerp from current to target
+        app.ticker.add(() => {
+          const c = parallaxCurrent.current;
+          const t = parallaxTarget.current;
+          c.x += (t.x - c.x) * 0.08;
+          c.y += (t.y - c.y) * 0.08;
+          if (sceneContainerRef.current) {
+            sceneContainerRef.current.x = c.x;
+            sceneContainerRef.current.y = c.y;
+          }
+        });
+
         renderScene(currentScene);
       });
 
@@ -100,9 +115,40 @@ export function WorldStage({
   useEffect(() => {
     if (!appRef.current || !sceneContainerRef.current) return;
     setHoveredObject(null); // clear stuck tooltip
+    setShowHints(true);
     renderScene(currentScene);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentScene]);
+
+  // Auto-hide onboarding hints after 6 seconds
+  useEffect(() => {
+    if (!showHints) return;
+    const t = setTimeout(() => setShowHints(false), 6000);
+    return () => clearTimeout(t);
+  }, [showHints, currentScene]);
+
+  // Mouse / touch → parallax target
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const onMove = (clientX: number, clientY: number) => {
+      const rect = host.getBoundingClientRect();
+      const nx = (clientX - rect.left) / rect.width - 0.5; // -0.5..0.5
+      const ny = (clientY - rect.top) / rect.height - 0.5;
+      parallaxTarget.current.x = -nx * 40; // px shift, inverted (look-toward direction)
+      parallaxTarget.current.y = -ny * 24;
+    };
+    const onMouse = (e: MouseEvent) => onMove(e.clientX, e.clientY);
+    const onTouch = (e: TouchEvent) => {
+      if (e.touches[0]) onMove(e.touches[0].clientX, e.touches[0].clientY);
+    };
+    host.addEventListener('mousemove', onMouse, { passive: true });
+    host.addEventListener('touchmove', onTouch, { passive: true });
+    return () => {
+      host.removeEventListener('mousemove', onMouse);
+      host.removeEventListener('touchmove', onTouch);
+    };
+  }, []);
 
   async function renderScene(sceneId: string) {
     const app = appRef.current;
@@ -265,6 +311,13 @@ export function WorldStage({
           </div>
         </div>
 
+        {/* Onboarding hint — bottom centred */}
+        {showHints && currentScene === 'external' && (
+          <div className="pointer-events-none absolute bottom-8 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/60 backdrop-blur text-[#f4ead5]/80 font-mono text-[10px] uppercase tracking-[0.3em] rounded-full border border-[#f4ead5]/15 hint-pulse">
+            тыкай по хижине, бару или по мне
+          </div>
+        )}
+
         {/* Tooltip */}
         {hoveredObject?.tooltip && (
           <div className="pointer-events-none absolute bottom-10 left-1/2 -translate-x-1/2 px-5 py-2.5 bg-black/75 backdrop-blur text-[#f4ead5] font-mono text-xs uppercase tracking-[0.3em] rounded-full border border-[#f4ead5]/15">
@@ -272,6 +325,16 @@ export function WorldStage({
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        @keyframes hintPulse {
+          0%, 100% { opacity: 0.45; transform: translate(-50%, 0); }
+          50% { opacity: 1; transform: translate(-50%, -4px); }
+        }
+        .hint-pulse {
+          animation: hintPulse 2.4s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }
