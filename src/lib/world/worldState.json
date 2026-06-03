@@ -21,7 +21,7 @@
           "w": 400,
           "h": 580,
           "click": "scene:bar-interior",
-          "tooltip": "БАР EDISON · ВНУТРЬ"
+          "tooltip": "BAR · ВНУТРЬ"
         },
         {
           "id": "frog-self",

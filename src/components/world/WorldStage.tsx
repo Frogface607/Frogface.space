@@ -341,6 +341,6 @@ export function WorldStage({
 
 function sceneLabel(id: string): string {
   if (id === 'hut-interior') return 'хижина';
-  if (id === 'bar-interior') return 'edison';
+  if (id === 'bar-interior') return 'bar';
   return id;
 }
