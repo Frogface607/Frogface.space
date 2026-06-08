@@ -126,7 +126,7 @@ export function HeroScene() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: leaving ? 0 : 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.9, ease }}
-          className="font-display text-[clamp(38px,7vw,92px)] font-medium italic leading-[0.95] tracking-tight text-[#f9f1dd]"
+          className="font-display text-[clamp(40px,7.4vw,96px)] font-semibold leading-[0.95] tracking-[-0.015em] text-[#f9f1dd]"
           style={{ textShadow: '0 2px 30px rgba(10,8,20,0.55), 0 1px 3px rgba(10,8,20,0.6)' }}
         >
           Выбираюсь из болота.

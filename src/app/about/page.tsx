@@ -1,42 +1,7 @@
-import Image from 'next/image';
 import Link from 'next/link';
+import AboutScroll from '@/components/about/AboutScroll';
 
 export const metadata = { title: 'About — Frogface' };
-
-const PANELS = [
-  {
-    num: '01',
-    year: '~1995',
-    place: 'Иркутск, Новоленино',
-    title: 'Откуда всё начиналось',
-    image: '/world/about/01-irkutsk.png',
-    text: 'Советский двор, панельки, зимы по -30. Филфак ИГУ — литература и язык. Музыка, рэп, стихи. С детства тянуло строить и рассказывать истории.',
-  },
-  {
-    num: '02',
-    year: '~2014',
-    place: 'Сбер / дизайн-студия',
-    title: 'Первый бизнес — на третьем курсе',
-    image: '/world/about/02-sber.png',
-    text: 'Сначала корпорат — недолго, не моё. Потом своя дизайн-студия. Выгорел от заказов «логотип на завтра». Понял что хочу строить что-то своё с душой, а не на конвейере.',
-  },
-  {
-    num: '03',
-    year: '2016 — 2026',
-    place: 'Edison Bar, Иркутск',
-    title: '9.5 лет своего места',
-    image: '/world/about/03-edison.png',
-    text: 'Бар. Музыкальная сцена. Концерты, джемы, поэтические вечера. Сам учился всему — обслуживание, найм, продажи, маркетинг, IT, бухгалтерия, кризисы. К концу — построил систему из 11 модулей, которая делала 90% операционки за меня. Закрыл бар 31 мая 2026 потому что арендодатели окончательно выселили. Но система осталась.',
-  },
-  {
-    num: '04',
-    year: 'сейчас',
-    place: 'Бангкок / Иркутск / куда занесёт',
-    title: 'Frogface Studio + всё что хочется',
-    image: '/world/about/04-bangkok.png',
-    text: 'Перешёл на режим — где живу, там и работаю. Frogface Studio — упаковываю системы из Edison в продукт для других баров и ресторанов. Параллельно делаю что нравится: 8FATES (RPG), Operator (личный AI-коуч), Posadyat (viral checker), WIZL (cannabis-вселенная для EN/TH рынков). Frogface.space — это пространство для всего.',
-  },
-];
 
 export default function AboutPage() {
   return (
@@ -48,7 +13,7 @@ export default function AboutPage() {
             ← в болото
           </Link>
           <div className="font-mono text-xs uppercase tracking-[0.25em] text-canon-olive">
-            03 / БИОГРАФИЯ
+            БИОГРАФИЯ
           </div>
           <Link href="/studio" className="font-mono text-xs uppercase tracking-[0.25em] hover:text-canon-olive">
             → STUDIO
@@ -59,7 +24,7 @@ export default function AboutPage() {
       {/* Hero */}
       <section className="px-6 py-16 md:py-24 max-w-3xl mx-auto">
         <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-canon-olive mb-3">
-          / 03 / кто я
+          / кто я
         </div>
         <h1
           className="font-display font-bold leading-[0.9] tracking-tight"
@@ -69,49 +34,61 @@ export default function AboutPage() {
           <span className="text-canon-olive">Frogface.</span>
         </h1>
         <p className="mt-8 text-lg text-canon-grey leading-relaxed max-w-2xl">
-          Уставший предприниматель с нулём денег, пытается выбраться из болота. Собственно, вот история, как добрался досюда.
+          15 лет придумывал миры — одежду, студии, бар, бургерную, музыку. Было много
+          вкуса, идей и души. Не хватало одного — системы. Теперь делаю так же
+          интересно, но системно. Вот как я сюда добрался.
         </p>
       </section>
 
-      {/* Panels */}
-      <section className="px-6 pb-24 max-w-3xl mx-auto space-y-24 md:space-y-32">
-        {PANELS.map((p) => (
-          <article key={p.num} className="space-y-6">
-            <div className="flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.3em] text-canon-tan">
-              <span className="text-canon-olive">/ {p.num} /</span>
-              <span>{p.year}</span>
-              <span className="opacity-60">·</span>
-              <span>{p.place}</span>
-            </div>
-            <h2 className="font-display font-bold text-3xl md:text-5xl leading-tight">
-              {p.title}
-            </h2>
-            <div className="relative aspect-video w-full bg-canon-ink/5 overflow-hidden">
-              <Image src={p.image} alt={p.title} fill className="object-cover" />
-            </div>
-            <p className="text-lg text-canon-ink/85 leading-relaxed max-w-2xl">
-              {p.text}
-            </p>
-          </article>
-        ))}
-      </section>
+      {/* Scroll-comic panels */}
+      <AboutScroll />
 
-      {/* Footer CTA */}
-      <section className="border-t border-canon-ink/15 px-6 py-16 max-w-3xl mx-auto">
-        <h3 className="font-display font-bold text-2xl md:text-4xl mb-4">
-          Это всё ещё пишется.
-        </h3>
-        <p className="text-canon-grey mb-8">
-          Если хочешь следить — канал <a href="https://t.me/sergeyorlove" className="underline hover:text-canon-olive">@sergeyorlove</a> «С Лицом Лягушки».
-          Если хочешь работать вместе — <Link href="/studio" className="underline hover:text-canon-olive">Frogface Studio</Link>.
-          Если просто посмотреть — <Link href="/" className="underline hover:text-canon-olive">в болото</Link>.
-        </p>
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 font-mono text-sm uppercase tracking-[0.2em] text-canon-ink hover:text-canon-olive border-b border-canon-ink/40 hover:border-canon-olive py-1"
-        >
-          ← обратно в болото
-        </Link>
+      {/* Footer CTA — warm dawn toward the Tower */}
+      <section className="relative border-t border-canon-ink/15 overflow-hidden">
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(244,244,240,0) 0%, rgba(212,184,134,0.18) 55%, rgba(107,122,63,0.22) 100%)',
+          }}
+        />
+        <div className="relative px-6 py-20 max-w-3xl mx-auto">
+          <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-canon-olive mb-3">
+            / цель на горизонте
+          </div>
+          <h3 className="font-display font-bold text-3xl md:text-5xl mb-5 leading-tight">
+            Дойти до башни.
+          </h3>
+          <p className="text-canon-ink/80 text-lg leading-relaxed mb-10 max-w-2xl">
+            Это всё ещё пишется. Каждый новый проект — новое здание на карте, шаг к
+            башне на горизонте. Хочешь следить — канал{' '}
+            <a
+              href="https://t.me/sergeyorlove"
+              className="underline decoration-canon-olive/50 hover:text-canon-olive"
+            >
+              «С лицом лягушки»
+            </a>
+            . Хочешь сделать вместе —{' '}
+            <Link href="/studio" className="underline decoration-canon-olive/50 hover:text-canon-olive">
+              Frogface Studio
+            </Link>
+            .
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <Link
+              href="/studio"
+              className="inline-flex items-center gap-2 font-mono text-sm uppercase tracking-[0.2em] bg-canon-ink text-canon-paper px-6 py-3 hover:bg-canon-olive transition-colors"
+            >
+              работать вместе →
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 font-mono text-sm uppercase tracking-[0.2em] text-canon-ink hover:text-canon-olive border-b border-canon-ink/40 hover:border-canon-olive py-1"
+            >
+              ← обратно в болото
+            </Link>
+          </div>
+        </div>
       </section>
     </main>
   );

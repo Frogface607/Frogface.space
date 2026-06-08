@@ -51,30 +51,30 @@ STUDIO (отдельная business-страница)
 
 ## Маскот и Pipeline
 
-### Frogface — Soul-ID locked + character sheets
+### Frogface — neutral base anchor + situational wardrobe (v3, 7 июня 2026)
 
+**ВАЖНО:** перешли с «вшитого костюма» на нейтральный base + одежду по ситуации.
+Причина: чёрное худи в каждом кадре ломало логику биографии (детство ≠ худи), а пацифик-цепочка «росла из капюшона» (баг дизайна). Теперь base = голое тело+лицо (трусы), одежда задаётся в промпте под сцену/эпоху.
+
+- **Base anchor (ИСПОЛЬЗОВАТЬ ВСЕГДА):** `11307639-90db-44b9-8e9b-c098476b5f50` — `base-v3-neutral.png` (turnaround фас/¾/профиль/спина + 6 эмоций + 3 кисти, нейтральные серые трусы, БЕЗ худи/пацифика). Один `--image` достаточно для консистентности лица.
 - **Soul-ID:** `bb0b2bd4-cac2-454f-a969-58e9902e88ae` (soul_2, FrogfaceSerge)
-- **Sheet UUIDs** (uploaded в Higgsfield):
-  - `73e0ba05-0768-4645-afda-b63197fceaf4` — character v2 (turnaround + expressions + ABOUT)
-  - `32a45125-2abc-493c-8900-1488fabf7c98` — pose sheet (8 поз + emotions + hands)
-  - `6b8dce8f-04e8-498a-8652-5bf8df70d4b0` — walk cycle (4 dir × 6 frames)
+- **LEGACY (НЕ использовать — старый худи+пацифик):** `73e0ba05...` (char v2), `32a45125...` (pose), `6b8dce8f...` (walk cycle). Перегенерить под новый base по мере надобности.
+- **Present-day сигнатура:** TBD (Босс выбирает). Пока для present-day сцен — чистое серое худи БЕЗ цепочки/пацифика.
 - **Reference files:** `D:\PROJECTS\FROGFACE-SPACE\refs\character\`
 
 ### Production pipeline
 
 ```bash
-# Любая сцена с Frogface
+# Любая сцена с Frogface (новый пайплайн)
 higgsfield generate create nano_banana_2 \
-  --prompt "Same anthropomorphic frog character from reference sheets, in signature black hoodie with frog mark, peace pendant, white sneakers. Scene: [DESC]. Match outlined cartoonish style from reference, NOT photorealistic." \
+  --prompt "the same anthropomorphic green frog character from the reference sheet (consistent face, body, design), wearing [CLOTHES FOR THIS SCENE/ERA]. Scene: [DESC]. Outlined cartoonish painterly style, NOT photorealistic, NOT 3D, NOT Pixar. No text in image." \
   --aspect_ratio "16:9" \
   --resolution "2k" \
-  --image 73e0ba05-0768-4645-afda-b63197fceaf4 \
-  --image 32a45125-2abc-493c-8900-1488fabf7c98 \
+  --image 11307639-90db-44b9-8e9b-c098476b5f50 \
   --wait
 
-# Walk-cycle спрайты для PixiJS
---image 6b8dce8f-04e8-498a-8652-5bf8df70d4b0
-
+# Одежда задаётся словами: kid t-shirt+shorts / bartender apron / clean grey hoodie / etc.
+# Walk-cycle спрайты — нужно перегенерить новый walk sheet под base-v3
 # Анимации (image-to-video)
 higgsfield generate create seedance_v2 --image <png> --prompt "..." --wait
 ```
@@ -96,7 +96,7 @@ higgsfield generate create seedance_v2 --image <png> --prompt "..." --wait
 - **Russian** UI text, **English** code/comments/commits
 - **Tone:** honest ironic. *«я ебался, понял, сделал, тебе тоже могу»* — не корпоратив, не панк, не мотиватор
 - **Frogface positioning:** «уставший предприниматель с нулём денег, пытается выбраться из болота» — не magical wizard, не founder calculated/adaptive
-- **Outfit lock:** в каждом prompt явно указывать signature outfit (hoodie + peace pendant + sneakers)
+- **Wardrobe (не outfit-lock!):** base = нейтральный (трусы), одежду задаём в промпте под сцену/эпоху. НИКАКОГО пацифика/цепочки. Present-day = чистое серое худи без украшений (пока TBD).
 - **Style lock:** в каждом prompt — outlined cartoonish painterly, no hard ink outlines, NOT photorealistic
 - **No-text lock:** избегаем text artifacts (`no text in image, no speech bubbles`)
 - **Edison cartoon в мире, реальные фото — только в /studio**
