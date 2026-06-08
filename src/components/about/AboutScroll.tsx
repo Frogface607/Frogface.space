@@ -1,8 +1,14 @@
 'use client';
 
+import { useRef } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useReducedMotion,
+  type Variants,
+} from 'framer-motion';
 
 type Panel = {
   num: string;
@@ -86,60 +92,93 @@ const PANELS: Panel[] = [
     image: '/about/p09-nechto.webp',
     text: 'Бургерная «Нечто». НЛО-бургеры, ретрофутуризм, лавовые лампы. Тысячи бургеров по моим рецептам. Красиво — делал как видел. Но не вытянул: не хватило системы. Самый дорогой урок.',
   },
-  {
-    num: '10',
-    era: 'сейчас',
-    place: 'болото → башня',
-    title: 'Выбираюсь',
-    image: '/about/p10-swamp-to-tower.webp',
-    text: 'Потом нейросети. Собрал Edison сайт-операционку, сбросил 90% рутины. А Edison закрыли. И вот я один, в болоте. Заебался жить ради чужих ожиданий. Теперь выбираюсь к своей башне — спокойно, без вины. Делаю так же интересно, но системно. И хочу за это достойные деньги.',
-  },
 ];
 
-export default function AboutScroll() {
+const EASE = [0.16, 1, 0.3, 1] as const;
+
+const container: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06, delayChildren: 0.04 } },
+};
+
+const rise: Variants = {
+  hidden: { opacity: 0, y: 26 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
+};
+
+function PanelBlock({ p, index }: { p: Panel; index: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start end', 'end start'],
+  });
+  // gentle vertical parallax on the artwork (disabled for reduced motion)
+  const y = useTransform(scrollYProgress, [0, 1], reduce ? ['0%', '0%'] : ['-7%', '7%']);
+
   return (
-    <section className="px-6 pb-24 max-w-3xl mx-auto space-y-28 md:space-y-40">
-      {PANELS.map((p, i) => (
-        <motion.article
-          key={p.num}
-          className="space-y-6"
-          initial={{ opacity: 0, y: 32 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-15% 0px -10% 0px' }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+    <motion.article
+      ref={ref}
+      variants={container}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: '-12% 0px -8% 0px' }}
+      className="grid gap-6 md:grid-cols-[7rem_1fr] md:gap-10"
+    >
+      {/* Sticky chapter index (desktop) */}
+      <motion.div variants={rise} className="md:sticky md:top-28 md:self-start">
+        <div className="font-display text-5xl md:text-6xl leading-none text-canon-olive/30 tabular-nums">
+          {p.num}
+        </div>
+        <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.25em] text-canon-tan">
+          {p.era}
+        </div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-canon-ink/40">
+          {p.place}
+        </div>
+      </motion.div>
+
+      <div className="space-y-5">
+        <motion.h2
+          variants={rise}
+          className="font-display font-bold text-3xl md:text-5xl leading-tight text-canon-ink"
         >
-          <div className="flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.3em] text-canon-tan">
-            <span className="text-canon-olive">/ {p.num} /</span>
-            <span>{p.era}</span>
-            <span className="opacity-50">·</span>
-            <span>{p.place}</span>
-          </div>
+          {p.title}
+        </motion.h2>
 
-          <h2 className="font-display font-bold text-3xl md:text-5xl leading-tight">
-            {p.title}
-          </h2>
-
-          <motion.div
-            className="relative aspect-video w-full overflow-hidden rounded-sm bg-canon-ink/5 ring-1 ring-canon-ink/10"
-            initial={{ scale: 1.04 }}
-            whileInView={{ scale: 1 }}
-            viewport={{ once: true, margin: '-10% 0px' }}
-            transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
-          >
+        <motion.div
+          variants={rise}
+          className="relative aspect-video w-full overflow-hidden rounded-sm bg-canon-ink/5 ring-1 ring-canon-ink/10 shadow-[0_18px_50px_-24px_rgba(47,47,47,0.5)]"
+        >
+          <motion.div style={{ y }} className="absolute inset-[-8%]">
             <Image
               src={p.image}
               alt={p.title}
               fill
-              sizes="(max-width: 768px) 100vw, 768px"
+              sizes="(max-width: 768px) 100vw, 700px"
               className="object-cover"
-              priority={i === 0}
+              priority={index === 0}
             />
           </motion.div>
+        </motion.div>
 
-          <p className="text-lg text-canon-ink/85 leading-relaxed max-w-2xl whitespace-pre-line">
-            {p.text}
-          </p>
-        </motion.article>
+        <motion.p
+          variants={rise}
+          className="font-body text-[19px] md:text-xl leading-[1.7] text-canon-ink/85 max-w-2xl whitespace-pre-line"
+        >
+          {p.text}
+        </motion.p>
+      </div>
+    </motion.article>
+  );
+}
+
+export default function AboutScroll() {
+  return (
+    <section className="px-6 pb-28 max-w-4xl mx-auto space-y-28 md:space-y-40">
+      {PANELS.map((p, i) => (
+        <PanelBlock key={p.num} p={p} index={i} />
       ))}
     </section>
   );

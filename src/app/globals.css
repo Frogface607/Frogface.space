@@ -25,6 +25,7 @@
   /* Fonts — loaded via next/font in layout */
   --font-display: "Playfair Display", "Iowan Old Style", "Hoefler Text", Georgia, serif;
   --font-sans: "Geist", system-ui, -apple-system, sans-serif;
+  --font-body: "Source Serif 4", "Iowan Old Style", Georgia, serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
@@ -76,4 +77,21 @@
   background: rgba(15, 19, 24, 0.85);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(244, 234, 213, 0.1);
+}
+
+/* Literary body for editorial / biography pages */
+.font-body {
+  font-family: var(--font-body);
+}
+
+/* Accessibility: kill heavy motion for users who ask for it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

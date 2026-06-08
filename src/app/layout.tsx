@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Playfair_Display, Geist, JetBrains_Mono } from 'next/font/google';
+import { Playfair_Display, Geist, JetBrains_Mono, Source_Serif_4 } from 'next/font/google';
 import './globals.css';
 
 const playfair = Playfair_Display({
@@ -14,6 +14,15 @@ const geist = Geist({
   subsets: ['latin'],
   variable: '--font-sans',
   display: 'swap',
+});
+
+// Literary serif for long-form reading (biography / editorial body)
+const sourceSerif = Source_Serif_4({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-body',
+  display: 'swap',
+  weight: ['300', '400', '600'],
+  style: ['normal', 'italic'],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -46,7 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="ru"
-      className={`${playfair.variable} ${geist.variable} ${jetbrainsMono.variable}`}
+      className={`${playfair.variable} ${geist.variable} ${jetbrainsMono.variable} ${sourceSerif.variable}`}
     >
       <body className="antialiased">{children}</body>
     </html>
