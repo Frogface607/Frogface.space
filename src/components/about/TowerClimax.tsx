@@ -38,7 +38,7 @@ export default function TowerClimax() {
         {/* Artwork */}
         <motion.div style={{ scale }} className="absolute inset-0">
           <Image
-            src="/about/p10-swamp-to-tower.webp"
+            src="/about/p10-swamp-to-tower-v2.webp"
             alt="Болото и башня на горизонте"
             fill
             sizes="100vw"
@@ -72,8 +72,9 @@ export default function TowerClimax() {
             </h2>
             <p className="mt-6 font-body text-lg md:text-xl leading-relaxed text-canon-paper/85 max-w-2xl">
               Это всё ещё пишется. Каждый новый проект — новое здание на карте, ещё
-              один шаг к башне на горизонте. Не мечтать, чтобы выжить — а жить, как
-              хочется.
+              один шаг к башне на горизонте. Но башня строится не из тревоги: я учусь
+              жить уже сейчас — ходить, думать, делать своё и параллельно собирать
+              систему.
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-4">

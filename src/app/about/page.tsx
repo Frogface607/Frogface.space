@@ -9,7 +9,7 @@ export const metadata = { title: 'About — Frogface' };
 
 export default function AboutPage() {
   return (
-    <main className="relative min-h-dvh text-canon-ink font-body">
+    <main className="relative isolate min-h-dvh overflow-hidden bg-canon-paper text-canon-ink font-body">
       <SmoothScroll />
       <ScrollProgress />
       <DawnBackdrop />
@@ -30,7 +30,7 @@ export default function AboutPage() {
       </header>
 
       {/* Hero */}
-      <section className="px-6 pt-20 pb-16 md:pt-28 md:pb-24 max-w-4xl mx-auto">
+      <section className="relative z-10 px-6 pt-20 pb-16 md:pt-28 md:pb-24 max-w-4xl mx-auto">
         <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-canon-olive mb-4">
           / кто я
         </div>

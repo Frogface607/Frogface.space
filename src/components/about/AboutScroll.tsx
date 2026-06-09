@@ -25,7 +25,7 @@ const PANELS: Panel[] = [
     era: 'детство',
     place: 'Новоленино, Иркутск',
     title: 'Откуда я',
-    image: '/about/p01-novolenino.webp',
+    image: '/about/p01-novolenino-v2.webp',
     text: 'Я с Новоленино. Район, где могут и пизды дать, но где ты впервые понимаешь, кто ты. В пять лет я уже там — книжки, ролики, ПАЗик у подъезда.',
   },
   {
@@ -33,7 +33,7 @@ const PANELS: Panel[] = [
     era: 'школа',
     place: 'первые деньги',
     title: 'Сначала — руками',
-    image: '/about/p02-soundboard.webp',
+    image: '/about/p02-soundboard-v2.webp',
     text: 'Первые деньги зарабатывал руками. Грузчиком на Pepsi таскал ящики, маляром красил подъёмный кран. А первая официальная работа — звукооператор: школьные концерты, аппарат, чек, музыку вовремя врубить. Копейки на сберкнижку. Но свои.',
   },
   {
@@ -41,7 +41,7 @@ const PANELS: Panel[] = [
     era: 'филфак',
     place: 'реклама и PR',
     title: 'Придумывать миры',
-    image: '/about/p03-adman.webp',
+    image: '/about/p03-adman-v2.webp',
     text: 'Все ждали, что пойду в технари. Я пошёл на филфак, на рекламу. Делал кампании Сбербанку — придумывал, а не исполнял. Тогда и понял: моё — придумывать миры.',
   },
   {
@@ -49,7 +49,7 @@ const PANELS: Panel[] = [
     era: '3 курс',
     place: '«Метка»',
     title: 'Первый продукт',
-    image: '/about/p04-metka.webp',
+    image: '/about/p04-metka-v2.webp',
     text: 'С друзьями сделали одежду про свой район. Бренд «Метка», ПАЗик на футболках. Шили аж в Пакистане. Погорело. Но я рано понял кайф делать настоящий продукт, а не картинки.',
   },
   {
@@ -57,7 +57,7 @@ const PANELS: Panel[] = [
     era: 'Evidence / Markers',
     place: 'дизайн-студии',
     title: 'Подсел на рестораны',
-    image: '/about/p05-studio.webp',
+    image: '/about/p05-studio-v2.webp',
     text: 'Потом свои студии — Evidence, Markers. Брендили почти весь общепит Иркутска: меню, фирстили, упаковка. Так я и подсел на рестораны.',
   },
   {
@@ -65,7 +65,7 @@ const PANELS: Panel[] = [
     era: 'музыка',
     place: 'сцена',
     title: '«С лицом лягушки»',
-    image: '/about/p06-mic.webp',
+    image: '/about/p06-mic-v2.webp',
     text: 'Всю жизнь — музыка. Рэп-кор, фристайл, сцена. «С лицом лягушки» родилось из пьяных грустных фристайлов. Отсюда, кстати, и лягуха.',
   },
   {
@@ -73,7 +73,7 @@ const PANELS: Panel[] = [
     era: '2016',
     place: 'Edison Bar',
     title: 'Это надо было сделать давно',
-    image: '/about/p07-edison-build.webp',
+    image: '/about/p07-edison-build-v2.webp',
     text: 'Отец спросил: открываем крафтовый бар? Я: это надо было сделать давно. Построили с нуля в пустом цоколе. Лампы Эдисона на разной высоте — отсюда и название.',
   },
   {
@@ -81,7 +81,7 @@ const PANELS: Panel[] = [
     era: '2016 — 2026',
     place: 'Edison Bar',
     title: 'Я был всем',
-    image: '/about/p08-edison-allroles.webp',
+    image: '/about/p08-edison-allroles-v2.webp',
     text: 'В Edison я был всем — от грузчика до звукооператора. ~300 концертов в год, тысячи афиш. Топит грунтовкой — играет джаз, а я выношу воду ведром. В ковид наливал пиво по гугл-форме. Ставил Баха в баре. Привозил мировых звёзд.',
   },
   {
@@ -89,7 +89,7 @@ const PANELS: Panel[] = [
     era: '2024',
     place: '«Нечто»',
     title: 'Самый дорогой урок',
-    image: '/about/p09-nechto.webp',
+    image: '/about/p09-nechto-v2.webp',
     text: 'Бургерная «Нечто». НЛО-бургеры, ретрофутуризм, лавовые лампы. Тысячи бургеров по моим рецептам. Красиво — делал как видел. Но не вытянул: не хватило системы. Самый дорогой урок.',
   },
 ];
@@ -176,7 +176,7 @@ function PanelBlock({ p, index }: { p: Panel; index: number }) {
 
 export default function AboutScroll() {
   return (
-    <section className="px-6 pb-28 max-w-4xl mx-auto space-y-28 md:space-y-40">
+    <section className="relative z-10 px-6 pb-28 max-w-4xl mx-auto space-y-28 md:space-y-40">
       {PANELS.map((p, i) => (
         <PanelBlock key={p.num} p={p} index={i} />
       ))}
