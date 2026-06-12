@@ -13,6 +13,7 @@ next-env.d.ts
 # Reference materials (character bible, style explorations, overnight gens)
 # Production assets live in public/world/
 refs/
+.superpowers/
 
 # OS junk
 .DS_Store
