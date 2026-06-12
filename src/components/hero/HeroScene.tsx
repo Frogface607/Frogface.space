@@ -106,6 +106,7 @@ export function HeroScene() {
         </span>
         <div className="flex items-center gap-5 font-mono text-[10px] uppercase tracking-[0.28em] text-[#f4ead5]/70 md:gap-7 md:text-[11px]">
           <a href="/world" className="transition-colors hover:text-[#f4ead5]">карта</a>
+          <a href="/character" className="transition-colors hover:text-[#e9c46a]">3d</a>
           <a href="/studio" className="transition-colors hover:text-[#b6ff3a]">studio</a>
           <a href="/now" className="hidden transition-colors hover:text-[#f4ead5] sm:inline">now</a>
         </div>
