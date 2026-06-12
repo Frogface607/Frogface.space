@@ -19,3 +19,7 @@ Generated first-pass WebGL assets for the Frogface character.
 - Grey jeans are intentionally separate from the base boxer shorts.
 - The peace pendant hangs from a chain around the neck and is not fused into the chest.
 - This is a procedural blockout for browser/game integration. Blender sculpt polish can replace the mesh later while preserving group names.
+
+## Sculpt Reference
+
+- Higgsfield Nano Banana Pro sculpt reference: https://d8j0ntlcm91z4.cloudfront.net/user_32H9003HkK0lZ3nJ7UGpo1pjwPB/hf_20260612_041427_60dec27a-86cd-490e-ad15-247fe5447192.png
