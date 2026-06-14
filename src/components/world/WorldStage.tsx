@@ -72,7 +72,6 @@ export function WorldStage({
         app.canvas.style.inset = '0';
         app.canvas.style.width = '100%';
         app.canvas.style.height = '100%';
-        app.canvas.style.objectFit = 'cover';
 
         const world = new Container();
         app.stage.addChild(world);
@@ -197,21 +196,25 @@ export function WorldStage({
 
     if (scene.walkable) {
       playerXRef.current = scene.playerStart ?? scene.walkable.minX;
-      drawPlayableExternal(world, scene);
+      await drawPlayableExternal(world, scene);
     } else {
       await drawStaticScene(world, scene, sceneId);
     }
   }
 
-  function drawPlayableExternal(world: Container, scene: Scene) {
+  async function drawPlayableExternal(world: Container, scene: Scene) {
     const worldWidth = scene.worldWidth ?? DEFAULT_WORLD_W;
     const laneY = scene.walkable?.y ?? 790;
+    const imageLoaded = await drawGeneratedBackground(world, scene, worldWidth);
 
-    drawSky(world, worldWidth);
-    drawFarTrees(world, worldWidth);
-    drawSwampWater(world, worldWidth);
-    drawWorldLandmarks(world);
-    drawBoardwalk(world, worldWidth, laneY);
+    if (!imageLoaded) {
+      drawSky(world, worldWidth);
+      drawFarTrees(world, worldWidth);
+      drawSwampWater(world, worldWidth);
+      drawWorldLandmarks(world);
+      drawBoardwalk(world, worldWidth, laneY);
+    }
+
     drawHotspots(world, scene);
 
     const player = createFrogfacePlayer();
@@ -220,7 +223,22 @@ export function WorldStage({
     world.addChild(player);
     playerRef.current = player;
 
-    drawForegroundReeds(world, worldWidth);
+    if (!imageLoaded) {
+      drawForegroundReeds(world, worldWidth);
+    }
+  }
+
+  async function drawGeneratedBackground(world: Container, scene: Scene, worldWidth: number) {
+    try {
+      const tex = await Assets.load(scene.background);
+      const bg = new Sprite(tex);
+      bg.width = worldWidth;
+      bg.height = SCENE_H;
+      world.addChild(bg);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async function drawStaticScene(world: Container, scene: Scene, sceneId: string) {

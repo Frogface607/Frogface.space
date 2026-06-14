@@ -2,7 +2,7 @@
   "tier": "swamp",
   "scenes": {
     "external": {
-      "background": "/world/external/swamp-bg.png",
+      "background": "/world/frogface/swamp-street-concept-v1.png",
       "ambient": "swamp-night",
       "worldWidth": 3600,
       "playerStart": 520,
