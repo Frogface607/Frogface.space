@@ -46,11 +46,27 @@ export interface WorldObject {
   unlockedAt?: WealthTier;
 }
 
+export interface WorldLayer {
+  id: string;
+  kind: 'procedural' | 'image';
+  image?: string;
+  depth: number;
+  tint?: string;
+}
+
 export interface Scene {
   /** Full-canvas background image */
   background: string;
   /** Optional ambient ID (light, particles, music) — handled by SceneEffects */
   ambient?: 'swamp-night' | 'hut-warm' | 'bar-warm';
+  /** Optional world width for side-scroll scenes */
+  worldWidth?: number;
+  /** Optional player start X for playable scenes */
+  playerStart?: number;
+  /** Optional one-dimensional walk lane */
+  walkable?: { minX: number; maxX: number; y: number };
+  /** Optional parallax/image layers for playable scenes */
+  layers?: WorldLayer[];
   /** Interactive objects */
   objects: WorldObject[];
 }
