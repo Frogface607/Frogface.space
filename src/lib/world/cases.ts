@@ -69,6 +69,17 @@ export const CASES: Record<string, CaseModule> = {
     priceModule: '$300',
     pricePackage: 'Включён в любой пакет',
   },
+  receptor: {
+    id: 'receptor',
+    title: 'Receptor',
+    tag: 'TECH',
+    edisonResult: 'Персональный операционный центр: идеи, задачи, проекты и AI-работа в одном месте.',
+    whatItDoes:
+      'Здесь будет жить Receptor: штаб для сборки идей, проектных решений, связи между Frogface, Edison, MyReply и будущими инструментами.',
+    applies: ['Frogface.space', 'AI-оператор', 'Личный штаб', 'Проекты'],
+    priceModule: '—',
+    pricePackage: '—',
+  },
   'tg-bot': {
     id: 'tg-bot',
     title: 'Telegram-бот для гостей и админа',

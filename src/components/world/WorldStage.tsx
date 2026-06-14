@@ -18,6 +18,8 @@ const SCENE_W = 1920;
 const SCENE_H = 1080;
 const DEFAULT_WORLD_W = 1920;
 const PLAYER_SPEED = 7.5;
+const PLAYER_GROUND_OFFSET = 34;
+const BOARDWALK_IMAGE = '/world/frogface/ground/image2-v1/boardwalk-ground-v1.png';
 
 type MoveDir = -1 | 0 | 1;
 
@@ -169,7 +171,7 @@ export function WorldStage({
 
       const walking = dir !== 0;
       player.x = playerXRef.current;
-      player.y = walkable.y + Math.sin(performance.now() / 120) * (walking ? 5 : 2);
+      player.y = walkable.y + PLAYER_GROUND_OFFSET + Math.sin(performance.now() / 150) * (walking ? 3 : 1);
       player.scale.x = dir < 0 ? -1 : 1;
       player.rotation = walking ? Math.sin(performance.now() / 90) * 0.025 : 0;
       updatePlayerAnimation(player, walking);
@@ -213,14 +215,14 @@ export function WorldStage({
       drawFarTrees(world, worldWidth);
       drawSwampWater(world, worldWidth);
       drawWorldLandmarks(world);
-      drawBoardwalk(world, worldWidth, laneY);
     }
 
     drawHotspots(world, scene);
+    await drawBoardwalk(world, worldWidth, laneY);
 
     const player = await createFrogfacePlayer();
     player.x = playerXRef.current;
-    player.y = laneY;
+    player.y = laneY + PLAYER_GROUND_OFFSET;
     world.addChild(player);
     playerRef.current = player;
 
@@ -233,7 +235,7 @@ export function WorldStage({
     try {
       const tex = await Assets.load(scene.background);
       const bg = new Sprite(tex);
-      bg.width = worldWidth;
+      bg.width = SCENE_W;
       bg.height = SCENE_H;
       world.addChild(bg);
       return true;
@@ -375,15 +377,54 @@ export function WorldStage({
     world.addChild(g);
   }
 
-  function drawBoardwalk(world: Container, worldWidth: number, laneY: number) {
-    const g = new Graphics();
-    g.rect(0, laneY - 28, worldWidth, 98);
-    g.fill({ color: 0x342416, alpha: 0.96 });
-    for (let x = 0; x < worldWidth; x += 72) {
-      g.rect(x, laneY - 34, 48, 108);
-      g.fill({ color: x % 144 === 0 ? 0x4a3320 : 0x3c2a1a, alpha: 0.95 });
-      g.stroke({ color: 0x19100a, width: 2, alpha: 0.55 });
+  async function drawBoardwalk(world: Container, worldWidth: number, laneY: number) {
+    try {
+      const tex = await Assets.load(BOARDWALK_IMAGE);
+      const sprite = new Sprite(tex);
+      sprite.anchor.set(0, 0);
+      sprite.x = 0;
+      sprite.width = worldWidth;
+      sprite.height = Math.round((tex.height / tex.width) * worldWidth);
+      sprite.y = laneY - 78;
+      world.addChild(sprite);
+      return;
+    } catch {
+      drawFallbackBoardwalk(world, worldWidth, laneY);
     }
+  }
+
+  function drawFallbackBoardwalk(world: Container, worldWidth: number, laneY: number) {
+    const g = new Graphics();
+    g.rect(0, laneY - 22, worldWidth, 142);
+    g.fill({ color: 0x25170d, alpha: 0.94 });
+    g.rect(0, laneY + 90, worldWidth, 58);
+    g.fill({ color: 0x080604, alpha: 0.28 });
+
+    for (let x = -18; x < worldWidth; x += 86) {
+      const plankY = laneY - 34 + (x % 3) * 4;
+      g.roundRect(x, plankY, 76, 126, 6);
+      g.fill({ color: x % 172 === 0 ? 0x5a3b22 : 0x432a17, alpha: 0.98 });
+      g.stroke({ color: 0x140c06, width: 2, alpha: 0.58 });
+      g.moveTo(x + 8, plankY + 24);
+      g.lineTo(x + 68, plankY + 18);
+      g.moveTo(x + 10, plankY + 78);
+      g.lineTo(x + 64, plankY + 72);
+      g.stroke({ color: 0x8a6036, width: 2, alpha: 0.35 });
+    }
+
+    for (let x = 30; x < worldWidth; x += 240) {
+      g.roundRect(x, laneY - 88, 30, 190, 8);
+      g.fill({ color: 0x3a2413, alpha: 0.98 });
+      g.stroke({ color: 0x140c06, width: 3, alpha: 0.55 });
+      g.circle(x + 15, laneY - 92, 20);
+      g.fill({ color: 0x5d3d21, alpha: 0.95 });
+    }
+    g.moveTo(0, laneY - 68);
+    g.lineTo(worldWidth, laneY - 68);
+    g.stroke({ color: 0x7a5330, width: 8, alpha: 0.72 });
+    g.moveTo(0, laneY - 54);
+    g.lineTo(worldWidth, laneY - 54);
+    g.stroke({ color: 0x160d07, width: 3, alpha: 0.5 });
     world.addChild(g);
   }
 
@@ -401,15 +442,15 @@ export function WorldStage({
   async function createFrogfacePlayer() {
     try {
       const framePaths = Array.from({ length: 12 }, (_, index) =>
-        `/world/frogface/character/autosprite-v1/frogface-autosprite-v1-${String(index + 1).padStart(2, '0')}.png`,
+        `/world/frogface/character/seedance-side-walk-v1/frames/frogface-seedance-side-walk-v1-${String(index + 1).padStart(2, '0')}.png`,
       );
       const textures = await Promise.all(framePaths.map((path) => Assets.load(path)));
       const sprite = new AnimatedSprite(textures);
       sprite.anchor.set(0.5, 1);
-      sprite.animationSpeed = 0.22;
+      sprite.animationSpeed = 0.12;
       sprite.loop = true;
       sprite.gotoAndStop(0);
-      sprite.scale.set(0.52);
+      sprite.scale.set(0.42);
 
       const frog = new Container();
       frog.addChild(sprite);

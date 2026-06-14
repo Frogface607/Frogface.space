@@ -2,13 +2,13 @@
   "tier": "swamp",
   "scenes": {
     "external": {
-      "background": "/world/frogface/swamp-street-concept-v1.png",
+      "background": "/world/frogface/layers/image2-swamp-background-clean-v1.png",
       "ambient": "swamp-night",
-      "worldWidth": 3600,
-      "playerStart": 520,
+      "worldWidth": 1920,
+      "playerStart": 420,
       "walkable": {
-        "minX": 240,
-        "maxX": 3320,
+        "minX": 120,
+        "maxX": 1760,
         "y": 790
       },
       "layers": [
@@ -36,46 +36,45 @@
       "objects": [
         {
           "id": "hut-zone",
-          "x": 250,
-          "y": 350,
-          "w": 430,
-          "h": 410,
+          "image": "/world/frogface/buildings/image2-v2/hut-building-v2.png",
+          "x": 15,
+          "y": 410,
+          "w": 510,
+          "h": 350,
+          "scale": 0.38,
           "click": "scene:hut-interior",
           "tooltip": "HUT / INSIDE"
         },
         {
-          "id": "now-zone",
-          "x": 880,
-          "y": 560,
-          "w": 310,
-          "h": 220,
-          "click": "route:/now",
-          "tooltip": "NOW"
-        },
-        {
-          "id": "gallery-zone",
-          "x": 1490,
-          "y": 420,
-          "w": 380,
-          "h": 330,
-          "click": "route:/gallery",
-          "tooltip": "POSTERS"
-        },
-        {
           "id": "studio-zone",
-          "x": 2320,
-          "y": 420,
-          "w": 410,
-          "h": 350,
+          "image": "/world/frogface/buildings/image2-v2/studio-building-v2.png",
+          "x": 500,
+          "y": 335,
+          "w": 572,
+          "h": 452,
+          "scale": 0.46,
           "click": "route:/studio",
           "tooltip": "STUDIO"
         },
         {
+          "id": "receptor-zone",
+          "image": "/world/frogface/buildings/image2-v2/receptor-building-v2.png",
+          "x": 990,
+          "y": 365,
+          "w": 511,
+          "h": 426,
+          "scale": 0.43,
+          "click": "case:receptor",
+          "tooltip": "RECEPTOR"
+        },
+        {
           "id": "bar-zone",
-          "x": 2900,
-          "y": 310,
-          "w": 520,
-          "h": 470,
+          "image": "/world/frogface/buildings/image2-v2/edison-bar-building-v2.png",
+          "x": 1385,
+          "y": 345,
+          "w": 577,
+          "h": 434,
+          "scale": 0.44,
           "click": "scene:bar-interior",
           "tooltip": "EDISON BAR"
         }
