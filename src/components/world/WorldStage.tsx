@@ -400,16 +400,16 @@ export function WorldStage({
 
   async function createFrogfacePlayer() {
     try {
-      const framePaths = [1, 2, 3, 4].map(
-        (frame) => `/world/frogface/character/frogface-walk-v3-${String(frame).padStart(2, '0')}.png`,
+      const framePaths = Array.from({ length: 12 }, (_, index) =>
+        `/world/frogface/character/autosprite-v1/frogface-autosprite-v1-${String(index + 1).padStart(2, '0')}.png`,
       );
       const textures = await Promise.all(framePaths.map((path) => Assets.load(path)));
       const sprite = new AnimatedSprite(textures);
       sprite.anchor.set(0.5, 1);
-      sprite.animationSpeed = 0.13;
+      sprite.animationSpeed = 0.22;
       sprite.loop = true;
       sprite.gotoAndStop(0);
-      sprite.scale.set(0.48);
+      sprite.scale.set(0.52);
 
       const frog = new Container();
       frog.addChild(sprite);
