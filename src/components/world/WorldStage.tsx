@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Application, Assets, Container, Graphics, Sprite, Text } from 'pixi.js';
+import { AnimatedSprite, Application, Assets, Container, Graphics, Sprite, Text } from 'pixi.js';
 import worldStateRaw from '@/lib/world/worldState.json';
 import {
   parseClick,
@@ -172,6 +172,7 @@ export function WorldStage({
       player.y = walkable.y + Math.sin(performance.now() / 120) * (walking ? 5 : 2);
       player.scale.x = dir < 0 ? -1 : 1;
       player.rotation = walking ? Math.sin(performance.now() / 90) * 0.025 : 0;
+      updatePlayerAnimation(player, walking);
 
       const maxCamera = Math.max(0, worldWidth - SCENE_W);
       const targetCamera = clamp(playerXRef.current - SCENE_W * 0.45, 0, maxCamera);
@@ -217,7 +218,7 @@ export function WorldStage({
 
     drawHotspots(world, scene);
 
-    const player = createFrogfacePlayer();
+    const player = await createFrogfacePlayer();
     player.x = playerXRef.current;
     player.y = laneY;
     world.addChild(player);
@@ -397,7 +398,28 @@ export function WorldStage({
     world.addChild(g);
   }
 
-  function createFrogfacePlayer() {
+  async function createFrogfacePlayer() {
+    try {
+      const framePaths = [1, 2, 3, 4].map(
+        (frame) => `/world/frogface/character/frogface-walk-v3-${String(frame).padStart(2, '0')}.png`,
+      );
+      const textures = await Promise.all(framePaths.map((path) => Assets.load(path)));
+      const sprite = new AnimatedSprite(textures);
+      sprite.anchor.set(0.5, 1);
+      sprite.animationSpeed = 0.13;
+      sprite.loop = true;
+      sprite.gotoAndStop(0);
+      sprite.scale.set(0.48);
+
+      const frog = new Container();
+      frog.addChild(sprite);
+      return frog;
+    } catch {
+      return createFallbackFrogfacePlayer();
+    }
+  }
+
+  function createFallbackFrogfacePlayer() {
     const frog = new Container();
 
     const body = new Graphics();
@@ -433,6 +455,17 @@ export function WorldStage({
 
     frog.scale.set(0.84);
     return frog;
+  }
+
+  function updatePlayerAnimation(player: Container, walking: boolean) {
+    const sprite = player.children[0];
+    if (!(sprite instanceof AnimatedSprite)) return;
+    if (walking && !sprite.playing) {
+      sprite.play();
+    }
+    if (!walking && sprite.playing) {
+      sprite.gotoAndStop(0);
+    }
   }
 
   function drawHotspots(world: Container, scene: Scene) {
