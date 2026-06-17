@@ -35,6 +35,7 @@ export function WorldStage({
   const worldRef = useRef<Container | null>(null);
   const playerRef = useRef<Container | null>(null);
   const fireflyRef = useRef<FireflyEmitter | null>(null);
+  const ambientFxRef = useRef<Container[]>([]);
   const keyDirRef = useRef<MoveDir>(0);
   const touchDirRef = useRef<MoveDir>(0);
   const playerXRef = useRef(520);
@@ -158,6 +159,8 @@ export function WorldStage({
     const player = playerRef.current;
     if (!scene || !world) return;
 
+    animateAmbientFx(delta);
+
     const worldWidth = scene.worldWidth ?? DEFAULT_WORLD_W;
     const walkable = scene.walkable;
     const dir = touchDirRef.current || keyDirRef.current;
@@ -195,6 +198,7 @@ export function WorldStage({
 
     world.removeChildren();
     playerRef.current = null;
+    ambientFxRef.current = [];
     cameraXRef.current = 0;
 
     if (scene.walkable) {
@@ -218,6 +222,7 @@ export function WorldStage({
     }
 
     drawHotspots(world, scene);
+    drawWorldFx(world, scene);
     await drawBoardwalk(world, worldWidth, laneY);
 
     const player = await createFrogfacePlayer();
@@ -437,6 +442,65 @@ export function WorldStage({
       g.stroke({ color: 0x617044, width: 6, alpha: 0.85 });
     }
     world.addChild(g);
+  }
+
+  function drawWorldFx(world: Container, scene: Scene) {
+    if (!scene.walkable) return;
+
+    for (const obj of scene.objects) {
+      const fx = new Container();
+      fx.name = `fx-${obj.id}`;
+      fx.x = obj.x;
+      fx.y = obj.y;
+
+      const w = obj.w ?? 220;
+      const h = obj.h ?? 220;
+      const glow = new Graphics();
+
+      if (obj.id.includes('receptor')) {
+        glow.circle(w * 0.5, h * 0.45, 84);
+        glow.fill({ color: 0x39d8ff, alpha: 0.16 });
+        glow.circle(w * 0.5, h * 0.45, 38);
+        glow.fill({ color: 0xb6ff3a, alpha: 0.18 });
+      } else if (obj.id.includes('bar')) {
+        glow.rect(w * 0.1, h * 0.48, w * 0.75, 18);
+        glow.fill({ color: 0xe9c46a, alpha: 0.16 });
+        glow.circle(w * 0.36, h * 0.27, 44);
+        glow.circle(w * 0.57, h * 0.31, 34);
+        glow.fill({ color: 0xe9c46a, alpha: 0.15 });
+      } else if (obj.id.includes('studio')) {
+        glow.rect(w * 0.2, h * 0.46, w * 0.62, 12);
+        glow.fill({ color: 0x39d8ff, alpha: 0.14 });
+        glow.circle(w * 0.72, h * 0.22, 28);
+        glow.fill({ color: 0xb6ff3a, alpha: 0.12 });
+      } else {
+        glow.circle(w * 0.24, h * 0.48, 50);
+        glow.circle(w * 0.58, h * 0.36, 34);
+        glow.fill({ color: 0xe9c46a, alpha: 0.14 });
+      }
+
+      fx.addChild(glow);
+
+      const smoke = new Graphics();
+      smoke.ellipse(w * 0.72, 18, 18, 8);
+      smoke.ellipse(w * 0.75, -10, 24, 10);
+      smoke.ellipse(w * 0.7, -38, 16, 7);
+      smoke.fill({ color: 0xd7e0d0, alpha: obj.id.includes('receptor') ? 0.08 : 0.12 });
+      fx.addChild(smoke);
+
+      world.addChild(fx);
+      ambientFxRef.current.push(fx);
+    }
+  }
+
+  function animateAmbientFx(delta: number) {
+    const t = performance.now();
+    ambientFxRef.current.forEach((fx, index) => {
+      const wave = Math.sin(t / 650 + index * 0.9);
+      fx.alpha = 0.72 + wave * 0.18;
+      fx.y += Math.sin(t / 900 + index) * 0.012 * delta;
+      fx.scale.set(1 + wave * 0.006);
+    });
   }
 
   async function createFrogfacePlayer() {
@@ -661,6 +725,18 @@ export function WorldStage({
           <div className="hint-pulse pointer-events-none absolute bottom-24 left-1/2 max-w-[92vw] -translate-x-1/2 rounded-full border border-[#f4ead5]/15 bg-black/65 px-4 py-2 text-center font-mono text-[10px] uppercase tracking-[0.22em] text-[#f4ead5]/85 backdrop-blur">
             A/D or arrows. Walk to doors and press enter.
           </div>
+        )}
+
+        {isExternal && (
+          <aside className="pointer-events-none absolute left-4 top-20 hidden max-w-[260px] border border-[#f4ead5]/10 bg-black/55 p-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[#f4ead5]/72 backdrop-blur md:block">
+            <div className="mb-3 text-[#b6ff3a]">portfolio route</div>
+            <div className="space-y-2">
+              <div>hut: biography / now</div>
+              <div>studio: client systems</div>
+              <div>receptor: command center</div>
+              <div>edison: proof of work</div>
+            </div>
+          </aside>
         )}
 
         {activeTooltip && (
