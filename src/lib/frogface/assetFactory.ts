@@ -32,14 +32,17 @@ export const FROGFACE_CANON = {
   anatomy:
     'Olive green frog skin with darker round spots, tan throat and belly, large amber-brown eyes with heavy eyelids, compact body, readable silhouette, expressive hands.',
   defaultClothes:
-    'Black oversized hoodie with a small frogface chest logo, gray jeans, white sneakers, silver chain with a peace pendant hanging correctly from the neck.',
+    'Black oversized hoodie with an open low neckline that reveals the tan throat, small frogface chest logo, gray jeans, white sneakers.',
+  jewelry:
+    'A silver chain forms a complete visible loop around the neck, with both chain sides coming from behind the neck and resting over the throat/chest area; the peace pendant hangs freely below the throat. The chain is separate jewelry, not attached to the hoodie, collar, jacket, blazer, chest logo, or fabric.',
   palette:
     'Olive green, swamp sage, warm tan, charcoal black, gray denim, off-white sneakers, small silver jewelry accents.',
   style:
     'Premium cartoon concept art with clean inked edges, painterly texture, grounded lighting, no generic mascot look.',
   invariants: [
     'Keep Frogface identity consistent across all images.',
-    'The peace pendant hangs from the neck, never from the chest, hoodie fabric, jacket, or blazer.',
+    'The full necklace loop must be visible around the neck; do not draw the pendant or chain emerging from a hoodie, hood opening, jacket collar, blazer, chest, logo, pocket, or fabric seam.',
+    'For hoodie outfits, keep the hoodie neckline open and low enough to show the tan throat and the necklace loop sitting on top of the character, not disappearing into the hood.',
     'Use gray jeans unless the selected outfit explicitly changes pants.',
     'Use white sneakers unless the selected outfit explicitly changes shoes.',
     'Only the default, studio, field, and bar outfits may include a hoodie. Presentation mode must not include a hoodie or hood.',
@@ -59,28 +62,28 @@ export const FROGFACE_OUTFITS: FrogfaceOutfit[] = [
     id: 'studio',
     name: 'Studio Operator',
     clothing:
-      'Black hoodie under a dark work jacket, gray jeans, white sneakers, silver peace pendant on the neck, optional phone or notebook.',
+      'Black hoodie under a dark work jacket, open low neckline showing the tan throat, gray jeans, white sneakers, optional phone or notebook.',
     useWhen: 'studio page, client work, dashboards, briefings',
   },
   {
     id: 'presentation',
     name: 'Presentation Mode',
     clothing:
-      'Charcoal blazer over a plain black crew-neck shirt, no hoodie, no hood, gray jeans, white sneakers, silver peace pendant on the neck.',
+      'Charcoal blazer over a plain black crew-neck shirt with the neck clearly visible, no hoodie, no hood, gray jeans, white sneakers.',
     useWhen: 'portfolio decks, serious project cards, public founder materials',
   },
   {
     id: 'field',
     name: 'Field Build',
     clothing:
-      'Black hoodie, dark utility vest, gray jeans, white sneakers, silver peace pendant on the neck, subtle tool pouch.',
+      'Black hoodie with an open low neckline showing the tan throat, dark utility vest, gray jeans, white sneakers, subtle tool pouch.',
     useWhen: 'building products, debugging, behind-the-scenes materials',
   },
   {
     id: 'bar',
     name: 'Edison Night',
     clothing:
-      'Black hoodie, dark bar apron, gray jeans, white sneakers, silver peace pendant on the neck.',
+      'Black hoodie with an open low neckline showing the tan throat, dark bar apron, gray jeans, white sneakers.',
     useWhen: 'Edison Bar scenes, hospitality systems, music/bar story',
   },
 ];
@@ -145,6 +148,7 @@ export function buildFrogfaceImagePrompt({
     `Character canon: ${FROGFACE_CANON.identity}`,
     `Anatomy: ${FROGFACE_CANON.anatomy}`,
     `Clothing: ${outfit.clothing}`,
+    `Jewelry placement: ${FROGFACE_CANON.jewelry}`,
     `Style: ${FROGFACE_CANON.style}`,
     `Composition/framing: ${situation.framing}`,
     `Color palette: ${FROGFACE_CANON.palette}`,

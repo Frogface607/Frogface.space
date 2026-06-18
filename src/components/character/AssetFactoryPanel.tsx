@@ -1,4 +1,5 @@
 import {
+  FROGFACE_CANON,
   FROGFACE_OUTFITS,
   FROGFACE_SITUATIONS,
   buildFrogfaceBiographySeed,
@@ -65,11 +66,20 @@ export function AssetFactoryPanel() {
 
           <div className="mt-6 border border-[#f4ead5]/12 bg-[#f4ead5]/5 p-4">
             <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-[#b6ff3a]">
+              jewelry rule
+            </p>
+            <p className="mt-3 text-sm leading-6 text-[#f4ead5]/68">
+              {FROGFACE_CANON.jewelry}
+            </p>
+          </div>
+
+          <div className="mt-4 border border-[#f4ead5]/12 bg-black/25 p-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-[#e9c46a]">
               visual canon status
             </p>
             <p className="mt-3 text-sm leading-6 text-[#f4ead5]/68">
               The text canon is authoritative. Presentation mode explicitly has no hoodie and no
-              hood; visual sheets that break this rule stay out of production assets.
+              hood; visual sheets with a chain growing from clothing stay out of production assets.
             </p>
           </div>
         </div>
