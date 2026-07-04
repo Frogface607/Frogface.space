@@ -1,0 +1,22 @@
+Use case: ads-marketing
+Asset type: Instagram carousel diary slide 6, variant C, portrait 3:4 (1080x1440 feel)
+Primary request: Create a Frogface diary carousel slide in Russian.
+Scene/backdrop: warm off-white sketchbook paper, subtle square grid, thick imperfect black frame, coffee stains, pencil marks, small arrows, restrained red marker accents, tiny lime secondary accents. Do not use orange accents. Do not use tape/plaster strips as a repeating motif. No tower, no skyscraper, no skyline goal imagery.
+Visual direction: sketchbook diagram, arrows, objects and structure, no corporate UI.
+Reference images for Frogface if character appears:
+- /world/frogface/character/present-day-etalon-2026-07-02/frogface-present-day-coffee-3q.png (primary character reference when Frogface appears)
+- /world/frogface/character/present-day-etalon-2026-07-02/frogface-present-day-front.png (front-facing expression and outfit reference)
+- /world/frogface/character/present-day-etalon-2026-07-02/frogface-present-day-side.png (side profile reference)
+- /world/frogface/character/present-day-etalon-2026-07-02/frogface-present-day-walk-3q.png (movement / walking pose reference)
+Frogface character rule: If Frogface appears, use the present-day etalon: olive/sage frog, tired kind brown half-lidded eyes, tan throat/chin, dark olive spots, clean grey hoodie with drawstrings and no logo, white undershirt, dark loose pants, white sneakers, coffee when useful. Frogface is optional for this slide.
+Style/medium: clean 2D comic sketchbook, hand-drawn black ink and marker, rough but intentional, premium personal diary/worldbuilding. Not photorealistic, not 3D, not Pixar, not glossy, not corporate SaaS.
+Composition/framing: generous safe margins for 3:4 Instagram carousel, readable on phone, no fake clutter.
+Color palette: off-white paper, black ink, olive/sage greens, warm tan, strong red accents, firefly lime secondary accents, graphite grey.
+Text (verbatim, Russian Cyrillic, large readable hand-lettering, no extra words):
+"Edison Bar
+Вчера под пиво смотрел видео
+с концерта Синего Бита
+на закрытии EDISON BAR.
+Очень душевно.
+Скучаю."
+Constraints: Cyrillic text must be correctly spelled and legible; keep exact wording; no extra readable text; no logos; no watermark; Frogface must not have extra arms/hands; no tower or skyscraper imagery.
