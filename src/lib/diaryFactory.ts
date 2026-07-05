@@ -310,10 +310,10 @@ export const diaryEntry: DiaryEntry = {
       id: 'slide-01',
       index: 1,
       title: 'Слайд 1',
-      text: 'Дорогой дневник, сегодня день 4.\nВ субботу провел потрясающе\nпродуктивную стратегическую\nсессию.\nПрямо катаясь на роликах.',
+      text: 'Дорогой дневник, сегодня день 4.\nВ субботу провел потрясающе\nпродуктивную стратегическую\nсессию.\nКатаясь на роликах.',
       textVariants: fixedTextVariant(
         'День 4',
-        'Дорогой дневник, сегодня день 4.\nВ субботу провел потрясающе\nпродуктивную стратегическую\nсессию.\nПрямо катаясь на роликах.',
+        'Дорогой дневник, сегодня день 4.\nВ субботу провел потрясающе\nпродуктивную стратегическую\nсессию.\nКатаясь на роликах.',
       ),
       variants: [],
     },
@@ -552,15 +552,20 @@ export function buildDiaryPrompt({
   const referenceList = diaryVisualContract.references
     .map((reference) => `- ${reference.path} (${reference.use})`)
     .join('\n');
+  const slideSceneInstruction =
+    index === 1
+      ? '\nSlide 1 scene: Frogface must be present, sitting at a small desk or open sketchbook, writing in a diary with one pen. Two arms only. Keep Frogface compact and let the Russian diary text remain dominant.'
+      : '';
+  const frogfacePresence = index === 1 ? 'required' : 'optional';
 
   return `Use case: ads-marketing
 Asset type: Instagram carousel diary slide ${index}, variant ${direction.id.toUpperCase()}, portrait 3:4 (1080x1440 feel)
 Primary request: Create a Frogface diary carousel slide in Russian.
 Scene/backdrop: warm off-white sketchbook paper, subtle square grid, thick imperfect black frame, coffee stains, pencil marks, small arrows, restrained red marker accents, tiny lime secondary accents. Do not use orange accents. Do not use tape/plaster strips as a repeating motif. No tower, no skyscraper, no skyline goal imagery.
-Visual direction: ${direction.description}.
+Visual direction: ${direction.description}.${slideSceneInstruction}
 Reference images for Frogface if character appears:
 ${referenceList}
-Frogface character rule: If Frogface appears, use the present-day etalon: olive/sage frog, tired kind brown half-lidded eyes, tan throat/chin, dark olive spots, clean grey hoodie with drawstrings and no logo, white undershirt, dark loose pants, white sneakers, coffee when useful. Frogface is optional for this slide.
+Frogface character rule: If Frogface appears, use the present-day etalon: olive/sage frog, tired kind brown half-lidded eyes, tan throat/chin, dark olive spots, clean grey hoodie with drawstrings and no logo, white undershirt, dark loose pants, white sneakers, coffee when useful. Frogface is ${frogfacePresence} for this slide.
 Style/medium: clean 2D comic sketchbook, hand-drawn black ink and marker, rough but intentional, premium personal diary/worldbuilding. Not photorealistic, not 3D, not Pixar, not glossy, not corporate SaaS.
 Composition/framing: generous safe margins for 3:4 Instagram carousel, readable on phone, no fake clutter.
 Color palette: off-white paper, black ink, olive/sage greens, warm tan, strong red accents, firefly lime secondary accents, graphite grey.

@@ -1,4 +1,4 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { NextResponse } from 'next/server';
 import { resolveDiaryEntryDir } from '@/lib/diaryAssets.server';
@@ -44,6 +44,14 @@ export async function GET() {
   } catch {
     files = [];
   }
+  const versions = new Map(
+    await Promise.all(
+      files.map(async (file) => {
+        const fileStat = await stat(path.join(variantDir, file));
+        return [file.toLowerCase(), `${Math.round(fileStat.mtimeMs)}-${fileStat.size}`] as const;
+      }),
+    ),
+  );
 
   const slides = diaryEntry.slides.map((slide) => {
     const plannedSlide = generationPlan?.slides?.find((item) => item.id === slide.id);
@@ -55,6 +63,7 @@ export async function GET() {
         );
         const plannedVariant = plannedSlide?.variants?.find((item) => item.id === id);
         const ready = Boolean(fileName);
+        const version = fileName ? versions.get(fileName.toLowerCase()) : undefined;
 
         return {
           id,
@@ -62,7 +71,9 @@ export async function GET() {
           direction: plannedVariant?.label ?? direction.label,
           description: direction.description,
           fileName,
-          src: fileName ? `/diary/${diaryEntry.slug}/variants/${fileName}` : undefined,
+          src: fileName
+            ? `/diary/${diaryEntry.slug}/variants/${fileName}${version ? `?v=${version}` : ''}`
+            : undefined,
           prompt: plannedVariant?.label ?? direction.description,
           ready,
         };

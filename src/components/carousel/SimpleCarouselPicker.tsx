@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { diaryEntry } from '@/lib/diaryFactory';
 
@@ -236,12 +235,11 @@ export function SimpleCarouselPicker() {
                         >
                           <div className="relative aspect-[3/4] bg-[#e7e2d7]">
                             {variant.src ? (
-                              <Image
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
                                 src={variant.src}
                                 alt={`${slide.id}-${variant.id}`}
-                                fill
-                                sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
-                                className="object-cover"
+                                className="h-full w-full object-cover"
                               />
                             ) : (
                               <div className="grid h-full place-items-center p-5 text-center font-mono text-xs font-black uppercase tracking-[0.14em] text-[#181814]/42">
